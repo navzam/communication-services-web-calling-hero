@@ -52,6 +52,8 @@ export interface GroupCallProps {
   endCallHandler(): void;
   attempts: number;
   setAttempts(attempts: number): void;
+  onFileChosen(file: File): unknown;
+  onPhotoTaken(dataUrl: string): unknown;
 }
 
 export default (props: GroupCallProps): JSX.Element => {

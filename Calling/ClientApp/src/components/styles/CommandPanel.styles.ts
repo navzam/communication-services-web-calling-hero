@@ -54,7 +54,19 @@ export const copyLinkButtonStyle = mergeStyles({
   marginRight: '1rem',
   width: '90%'
 });
+export const attachButtonStyle = mergeStyles({
+  fontWeight: 600,
+  fontSize: '0.875rem', // 14px
+  height: '2.5rem',
+  marginLeft: '1rem',
+  marginRight: '1rem',
+  marginBottom: '0.5rem',
+  width: '90%'
+});
 export const copyIconStyle = mergeStyles({
+  marginRight: '0.5em'
+});
+export const attachIconStyle = mergeStyles({
   marginRight: '0.5em'
 });
 export const settingsContainerStyle = mergeStyles({

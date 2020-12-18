@@ -10,6 +10,8 @@ import {
   paneHeaderTextStyle
 } from './styles/CommandPanel.styles';
 import Footer from './Footer';
+import FilesList from './FilesList';
+import FilesFooter from './FilesFooter';
 
 export interface CommandPanelProps {
   selectedPane: string;
@@ -20,11 +22,14 @@ export interface CommandPanelProps {
   setSelectedPane: any;
   setVideoDeviceInfo(device: VideoDeviceInfo): void;
   setAudioDeviceInfo(device: AudioDeviceInfo): void;
+  onFileChosen(file: File): unknown;
+  onPhotoTaken(dataUrl: string): unknown;
 }
 export enum CommandPanelTypes {
   None = 'none',
   People = 'People',
-  Settings = 'Settings'
+  Settings = 'Settings',
+  Files = 'Files'
 }
 
 export default (props: CommandPanelProps): JSX.Element => {
@@ -57,6 +62,19 @@ export default (props: CommandPanelProps): JSX.Element => {
               setAudioDeviceInfo={props.setAudioDeviceInfo}
             />
           </div>
+          </Stack.Item>
+        )}
+        {props.selectedPane === CommandPanelTypes.Files && (
+          <Stack.Item styles={fullHeightStyles}>
+            <FilesList files={[
+              { filename: 'rash.jpg', size: 4292371 },
+              { filename: 'insurance.pdf', size: 5113982 }
+            ]} />
+          </Stack.Item>
+        )}
+        {props.selectedPane === CommandPanelTypes.Files && (
+          <Stack.Item>
+            <FilesFooter onFileChosen={props.onFileChosen} onPhotoTaken={props.onPhotoTaken} />
           </Stack.Item>
         )}
       

@@ -1,6 +1,6 @@
 import { connect } from 'react-redux';
 import GroupCall, { GroupCallProps } from '../components/GroupCall';
-import { joinGroup, setMicrophone } from '../core/sideEffects';
+import { joinGroup, sendFile, sendImage, setMicrophone } from '../core/sideEffects';
 import { setLocalVideoStream } from '../core/actions/streams';
 import { setVideoDeviceInfo, setAudioDeviceInfo } from '../core/actions/devices';
 import { AudioDeviceInfo, VideoDeviceInfo, LocalVideoStream } from '@azure/communication-calling';
@@ -51,7 +51,9 @@ const mapDispatchToProps = (dispatch: any) => ({
     dispatch(setVideoDeviceInfo(deviceInfo));
   },
   setLocalVideoStream: (localVideoStream: LocalVideoStream) => dispatch(setLocalVideoStream(localVideoStream)),
-  setAttempts: (attempts: number) => dispatch(callRetried(attempts))
+  setAttempts: (attempts: number) => dispatch(callRetried(attempts)),
+  onFileChosen: (file: File) => sendFile(file),
+  onPhotoTaken: (dataUrl: string) => sendImage(dataUrl)
 });
 
 const connector: any = connect(mapStateToProps, mapDispatchToProps);

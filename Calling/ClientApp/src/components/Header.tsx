@@ -4,7 +4,7 @@ import { Separator, Pivot, PivotItem, Stack } from '@fluentui/react';
 import { Call, LocalVideoStream, VideoDeviceInfo } from '@azure/communication-calling';
 import MediaControls from './MediaControls';
 import { CommandPanelTypes } from './CommandPanel';
-import { UserFriendsIcon, SettingsIcon } from '@fluentui/react-icons-northstar';
+import { UserFriendsIcon, SettingsIcon, FilesEmptyIcon } from '@fluentui/react-icons-northstar';
 import { Constants } from 'core/constants';
 import {
   headerContainer,
@@ -53,6 +53,12 @@ export default (props: HeaderProps): JSX.Element => {
       : setSelectedPane(CommandPanelTypes.None);
   };
 
+  const toggleFiles = (selectedPane: string, setSelectedPane: (pane: string) => void) => {
+    return selectedPane !== CommandPanelTypes.Files
+      ? setSelectedPane(CommandPanelTypes.Files)
+      : setSelectedPane(CommandPanelTypes.None);
+  };
+
   const handleLocalVideoOnOff = () => {
     if (props.localVideoStream) {
       props.call.stopVideo(props.localVideoStream);
@@ -91,7 +97,10 @@ export default (props: HeaderProps): JSX.Element => {
           if (!item) return;
           if (item.props.itemKey === CommandPanelTypes.Settings)
             toggleOptions(props.selectedPane, props.setSelectedPane);
-          if (item.props.itemKey === CommandPanelTypes.People) togglePeople(props.selectedPane, props.setSelectedPane);
+          if (item.props.itemKey === CommandPanelTypes.People)
+            togglePeople(props.selectedPane, props.setSelectedPane);
+          if (item.props.itemKey === CommandPanelTypes.Files)
+            toggleFiles(props.selectedPane, props.setSelectedPane);
         }}
         styles={pivotItemStyles}
         initialSelectedKey={CommandPanelTypes.None}
@@ -112,6 +121,16 @@ export default (props: HeaderProps): JSX.Element => {
           onRenderItemLink={() => (
             <UserFriendsIcon
               outline={props.selectedPane === CommandPanelTypes.People ? false : true}
+              size="medium"
+              className={pivotItemStyle}
+            />
+          )}
+        />
+        <PivotItem
+          itemKey={CommandPanelTypes.Files}
+          onRenderItemLink={() => (
+            <FilesEmptyIcon
+              outline={props.selectedPane === CommandPanelTypes.Files ? false : true}
               size="medium"
               className={pivotItemStyle}
             />
