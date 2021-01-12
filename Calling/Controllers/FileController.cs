@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Azure.Data.Tables;
 using Azure.Storage.Blobs;
@@ -26,7 +27,75 @@ namespace Calling
 			_tableName = "fileMetadata";
         }
 
+		/// <summary>
+		/// Gets a list of metadata for files
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet]
+		public async Task<IActionResult> GetAsync()
+		{
+			// TODO: Verify that user is allowed to get files for this chat/call
+
+			// Get file info from Table Storage
+			TableServiceClient tableServiceClient = new TableServiceClient(_storageAccountConnectionString);
+			TableClient tableClient = tableServiceClient.GetTableClient(_tableName);
+			tableClient.CreateIfNotExists();
+			var tableEntities = tableClient.Query<TableEntity>();
+			var files = tableEntities.Select(tableEntity => new FileMetadata
+			{
+				Id = tableEntity.GetString("FileId"),
+				Name = tableEntity.GetString("FileName"),
+				UploadDateTime = tableEntity.GetDateTimeOffset("UploadDateTime").Value,
+			});
+
+			return Ok(files);
+		}
+
         /// <summary>
+		/// Gets the content of a specific file
+		/// </summary>
+		/// <returns></returns>
+		[HttpGet("{fileId}")]
+		public async Task<IActionResult> GetFileAsync(string fileId)
+		{
+			// TODO: Verify that user is allowed to get files for this chat/call
+
+			// Prepare Table Storage clients
+			TableServiceClient tableServiceClient = new TableServiceClient(_storageAccountConnectionString);
+			TableClient tableClient = tableServiceClient.GetTableClient(_tableName);
+			tableClient.CreateIfNotExists();
+
+			// Get file info from Table Storage
+			Azure.Response<TableEntity> getTableEntityResponse;
+			try
+			{
+				getTableEntityResponse = await tableClient.GetEntityAsync<TableEntity>(fileId, fileId);
+			}
+			catch (Azure.RequestFailedException e)
+			{
+				if (e.Status == 404)
+				{
+					return NotFound();
+				}
+
+				return BadRequest("Couldn't get file from storage");
+			}
+
+			var fileName = getTableEntityResponse.Value.GetString("FileName");
+
+			// Prepare Blob Storage clients and container
+			BlobContainerClient containerClient = new BlobContainerClient(_storageAccountConnectionString, _blobContainerName);
+			containerClient.CreateIfNotExists();
+			BlobClient blob = containerClient.GetBlobClient(fileId);
+
+			// MemoryStream blobStream = new MemoryStream();
+			// var downloadResult = await blob.DownloadToAsync(blobStream);
+			var blobStream = await blob.OpenReadAsync();
+
+			return new FileStreamResult(blobStream, "application/octet-stream") { FileDownloadName = fileName };
+		}
+		
+		/// <summary>
 		/// Uploads a file
 		/// </summary>
 		/// <returns></returns>
@@ -35,7 +104,12 @@ namespace Calling
 		{
 			if (body.File == null && body.Image == null)
 			{
-				return BadRequest();
+				return BadRequest("Invalid file");
+			}
+
+			if (string.IsNullOrWhiteSpace(body.FileName))
+			{
+				return BadRequest("Invalid file name");
 			}
 
 			// TODO: Verify that user is allowed to upload files for this chat/call
@@ -76,6 +150,7 @@ namespace Calling
 			var entity = new TableEntity(blobName, blobName)
 			{
 				{ "FileId", blobName },
+				{ "FileName", body.FileName },
 				{ "UploadDateTime", DateTimeOffset.UtcNow }
 			};
 			tableClient.AddEntity(entity);
@@ -85,6 +160,15 @@ namespace Calling
 		}
     }
 
+	public class FileMetadata
+	{
+		public string Id { get; set; }
+
+		public string Name { get; set; }
+
+		public DateTimeOffset UploadDateTime { get; set; }
+	}
+
     public class SendFileRequestBody
 	{
 		[FromForm(Name="file")]
@@ -92,5 +176,8 @@ namespace Calling
 
 		[FromForm(Name="image")]
 		public string Image { get; set; }
+
+		[FromForm(Name="filename")]
+		public string FileName { get; set; }
 	}
 }

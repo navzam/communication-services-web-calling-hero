@@ -29,6 +29,7 @@ import {
   setDeviceManager
 } from './actions/devices';
 import { addScreenShareStream, resetStreams, removeScreenShareStream } from './actions/streams';
+import { setFiles } from './actions/files';
 import { State } from './reducers';
 
 export const setMicrophone = (mic: boolean) => {
@@ -325,10 +326,43 @@ const subscribeToDeviceManager = async (deviceManager: DeviceManager, dispatch: 
   });
 };
 
+export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
+  const response = await fetch('/files');
+  const responseJson: { id: string, name: string, uploadDateTime: string }[] = await response.json();
+  const files = responseJson.map(item => ({ id: item.id, filename: item.name, size: 1341, imageUrl: null, }));
+
+  dispatch(setFiles(files));
+
+  const imageFiles = responseJson.filter(item => item.name.toLowerCase().endsWith('.png') || item.name.toLowerCase().endsWith('.jpg'));
+  for (const imageFile of imageFiles) {
+    // TODO: should this be dispatched?
+    (dispatch as any)(getFile(imageFile.id));
+    // getFile(imageFile.id)(dispatch, getState);
+  }
+};
+
+export const getFile = (fileId: string) => {
+  return async (dispatch: Dispatch, getState: () => State) => {
+    const response = await fetch(`/files/${fileId}`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+
+    // Update files with new image URLs
+    const files = [...getState().files.files];
+    const fileIndex = files.findIndex(file => file.id === fileId);
+    if (fileIndex >= 0) {
+      files[fileIndex].imageUrl = objectUrl;
+    }
+
+    dispatch(setFiles(files));
+  };
+};
+
 export const sendFile = async (file: File) => {
   try {
     const data = new FormData();
     data.append('file', file);
+    data.append('fileName', file.name);
     let sendFileRequestOptions = {
       method: 'POST',
       body: data
@@ -347,6 +381,7 @@ export const sendImage = async (dataUrl: string) => {
   try {
     const data = new FormData();
     data.append('image', base64String);
+    data.append('fileName', 'user_photo.png');
     let sendFileRequestOptions = {
       method: 'POST',
       body: data

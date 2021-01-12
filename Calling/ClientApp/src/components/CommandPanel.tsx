@@ -10,7 +10,7 @@ import {
   paneHeaderTextStyle
 } from './styles/CommandPanel.styles';
 import Footer from './Footer';
-import FilesList from './FilesList';
+import FilesList from '../containers/FilesList';
 import FilesFooter from './FilesFooter';
 
 export interface CommandPanelProps {
@@ -66,10 +66,7 @@ export default (props: CommandPanelProps): JSX.Element => {
         )}
         {props.selectedPane === CommandPanelTypes.Files && (
           <Stack.Item styles={fullHeightStyles}>
-            <FilesList files={[
-              { filename: 'rash.jpg', size: 4292371 },
-              { filename: 'insurance.pdf', size: 5113982 }
-            ]} />
+            <FilesList />
           </Stack.Item>
         )}
         {props.selectedPane === CommandPanelTypes.Files && (
