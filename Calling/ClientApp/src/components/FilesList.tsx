@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import { DocumentCard, DocumentCardActions, DocumentCardDetails, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Modal } from '@fluentui/react';
 
 export interface FilesListProps {
-    files: {
-        id: string;
+    files: Map<string, {
         filename: string;
         size: number;
         imageUrl: string | null;
-    }[];
+    }>;
 }
 
 export default (props: FilesListProps): JSX.Element => {
     const [showingPhotoUrl, setShowingPhotoUrl] = useState<string | null>(null);
 
-    if (!props.files || props.files.length === 0) {
+    if (!props.files || props.files.size === 0) {
         return <div>No files have been shared yet.</div>
     }
 
-    const fileGridElements = props.files.map((file) => {
+    const fileGridElements: JSX.Element[] = [];
+    props.files.forEach((file, fileId) => {
         const hasPreviewImage = file.imageUrl !== null;
         const isImage = file.filename.toLowerCase().endsWith('.png') || file.filename.toLowerCase().endsWith('.jpg')
         const nonImageIcon: IIconProps = { iconName: 'Document' };
@@ -27,13 +27,13 @@ export default (props: FilesListProps): JSX.Element => {
                 iconName: 'Download',
             },
             // TODO: This only works because the API is currently not authenticated
-            href: `http://localhost:5000/files/${file.id}`,
+            href: `http://localhost:5000/files/${fileId}`,
             target: '_blank',
             // onClick: e => console.log(`Download clicked`),
             ariaLabel: 'download file'
         };
-        return (
-            <DocumentCard key={file.id} style={{ minWidth: '0px' }} onClick={hasPreviewImage ? (e) => setShowingPhotoUrl(file.imageUrl) : undefined} >
+        fileGridElements.push((
+            <DocumentCard key={fileId} style={{ minWidth: '0px' }} onClick={hasPreviewImage ? (e) => setShowingPhotoUrl(file.imageUrl) : undefined} >
                 <DocumentCardImage
                     height={150}
                     imageFit={ImageFit.cover}
@@ -44,10 +44,10 @@ export default (props: FilesListProps): JSX.Element => {
                 </DocumentCardDetails>
                 <DocumentCardActions actions={[downloadButton]} />
             </DocumentCard>
-        );
+        ));
     });
 
-    const numRows = Math.floor(props.files.length / 2);
+    const numRows = Math.floor(props.files.size / 2);
     const numCols = 2;
 
     return (

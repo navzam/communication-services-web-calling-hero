@@ -29,7 +29,7 @@ import {
   setDeviceManager
 } from './actions/devices';
 import { addScreenShareStream, resetStreams, removeScreenShareStream } from './actions/streams';
-import { setFiles } from './actions/files';
+import { setFileImageUrl, setFiles } from './actions/files';
 import { State } from './reducers';
 
 export const setMicrophone = (mic: boolean) => {
@@ -329,12 +329,15 @@ const subscribeToDeviceManager = async (deviceManager: DeviceManager, dispatch: 
 export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
   const response = await fetch('/files');
   const responseJson: { id: string, name: string, uploadDateTime: string }[] = await response.json();
-  const files = responseJson.map(item => ({ id: item.id, filename: item.name, size: 1341, imageUrl: null, }));
+  const files = responseJson.map(item => ({ id: item.id, filename: item.name, size: 1341, }));
 
   dispatch(setFiles(files));
 
   const imageFiles = responseJson.filter(item => item.name.toLowerCase().endsWith('.png') || item.name.toLowerCase().endsWith('.jpg'));
+  const currentFiles = getState().files.files;
   for (const imageFile of imageFiles) {
+    // Skip this image file if we already have an image URL for it
+    if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
     // TODO: should this be dispatched?
     (dispatch as any)(getFile(imageFile.id));
     // getFile(imageFile.id)(dispatch, getState);
@@ -348,13 +351,7 @@ export const getFile = (fileId: string) => {
     const objectUrl = URL.createObjectURL(blob);
 
     // Update files with new image URLs
-    const files = [...getState().files.files];
-    const fileIndex = files.findIndex(file => file.id === fileId);
-    if (fileIndex >= 0) {
-      files[fileIndex].imageUrl = objectUrl;
-    }
-
-    dispatch(setFiles(files));
+    dispatch(setFileImageUrl(fileId, objectUrl));
   };
 };
 
