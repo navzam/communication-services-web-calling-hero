@@ -17,6 +17,7 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 - [Visual Studio (2019 and above)](https://visualstudio.microsoft.com/vs/)
 - [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) (Make sure to install version that corresponds with your visual studio instance, 32 vs 64 bit)
 - Create an Azure Communication Services resource. For details, see [Create an Azure Communication Resource](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource). You'll need to record your resource **connection string** for this quickstart.
+- Create an Azure Storage Account (general purpose v2) resource. You'll need to record your resource **connection string** for this quickstart.
 
 ## Code structure
 
@@ -33,8 +34,9 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 ## Before running the sample for the first time
 1. Open an instance of PowerShell, Windows Terminal, Command Prompt or equivalent and navigate to the directory that you'd like to clone the sample to.
 2. `git clone https://github.com/Azure-Samples/communication-services-web-calling-hero.git`
-3. Get the `Connection String` from the Azure portal. For more information on connection strings, see [Create an Azure Communication Resources](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource)
-4. Once you get the `Connection String`, add the connection string to the **Calling/appsetting.json** file found under the Calling folder. Input your connection string in the variable: `ResourceConnectionString`. 
+3. Get the `Connection String` from the Azure portal for the ACS resource. For more information on connection strings, see [Create an Azure Communication Resources](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource)
+4. Get the `Connection String` from the Azure portal for the Azure Storage resource.
+5. Add the connection strings to the **Calling/appsetting.json** file found under the Calling folder. Input your connection string in the variables: `ResourceConnectionString` and `StorageAccountConnectionString`.
 
 ## Locally deploying the sample app
 
