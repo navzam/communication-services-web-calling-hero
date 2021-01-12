@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { DocumentCard, DocumentCardActions, DocumentCardDetails, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Modal } from '@fluentui/react';
 
 export interface FilesListProps {
@@ -8,15 +8,10 @@ export interface FilesListProps {
         size: number;
         imageUrl: string | null;
     }[];
-    updateFiles: () => void;
 }
 
 export default (props: FilesListProps): JSX.Element => {
     const [showingPhotoUrl, setShowingPhotoUrl] = useState<string | null>(null);
-
-    useEffect(() => {
-        props.updateFiles()
-    }, []);
 
     if (!props.files || props.files.length === 0) {
         return <div>No files have been shared yet.</div>

@@ -54,13 +54,19 @@ export interface GroupCallProps {
   setAttempts(attempts: number): void;
   onFileChosen(file: File): unknown;
   onPhotoTaken(dataUrl: string): unknown;
+  updateFiles(): void;
 }
 
 export default (props: GroupCallProps): JSX.Element => {
   const [selectedPane, setSelectedPane] = useState(CommandPanelTypes.None);
   const activeScreenShare = props.screenShareStreams && props.screenShareStreams.length === 1;
 
-  const { callAgent, call, groupId, joinGroup, attempts } = props;
+  const { callAgent, call, groupId, joinGroup, attempts, updateFiles } = props;
+
+  useEffect(() => {
+    updateFiles();
+    setInterval(() => { updateFiles(); }, 5000);
+  }, []);
 
   useEffect(() => {
     if (attempts > 3) {
