@@ -28,8 +28,8 @@ export default (props: FilesListProps): JSX.Element => {
             // TODO: This only works because the API is currently not authenticated
             href: `http://localhost:5000/files/${fileId}`,
             target: '_blank',
-            // onClick: e => console.log(`Download clicked`),
-            ariaLabel: 'download file'
+            onClick: e => e.stopPropagation(),
+            ariaLabel: 'download file',
         };
         fileGridElements.push((
             <DocumentCard key={fileId} style={{ minWidth: '0px' }} onClick={hasPreviewImage ? (e) => setShowingPhotoUrl(file.imageUrl) : undefined} >
