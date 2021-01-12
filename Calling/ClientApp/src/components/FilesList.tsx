@@ -4,7 +4,6 @@ import { DocumentCard, DocumentCardActions, DocumentCardDetails, DocumentCardIma
 export interface FilesListProps {
     files: Map<string, {
         filename: string;
-        size: number;
         imageUrl: string | null;
     }>;
 }

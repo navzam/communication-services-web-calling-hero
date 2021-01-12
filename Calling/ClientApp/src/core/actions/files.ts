@@ -4,7 +4,6 @@ const SET_FILE_IMAGE_URL = 'SET_FILE_IMAGE_URL';
 interface SetFilesActionFile {
     id: string;
     filename: string;
-    size: number;
 }
 
 interface SetFilesAction {

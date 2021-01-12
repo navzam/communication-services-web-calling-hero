@@ -329,7 +329,7 @@ const subscribeToDeviceManager = async (deviceManager: DeviceManager, dispatch: 
 export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
   const response = await fetch('/files');
   const responseJson: { id: string, name: string, uploadDateTime: string }[] = await response.json();
-  const files = responseJson.map(item => ({ id: item.id, filename: item.name, size: 1341, }));
+  const files = responseJson.map(item => ({ id: item.id, filename: item.name, }));
 
   dispatch(setFiles(files));
 

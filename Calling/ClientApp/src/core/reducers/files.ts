@@ -3,7 +3,6 @@ import { FileTypes, SET_FILES, SET_FILE_IMAGE_URL } from '../actions/files';
 
 interface File {
     filename: string;
-    size: number;
     imageUrl: string | null;
 }
 
@@ -22,7 +21,6 @@ export const filesReducer: Reducer<FilesState, FileTypes> = (state = initialStat
             for (const file of action.files) {
                 newFilesMap.set(file.id, {
                     filename: file.filename,
-                    size: file.size,
                     imageUrl: state.files.has(file.id) ? state.files.get(file.id)!.imageUrl : null,
                 });
             }
