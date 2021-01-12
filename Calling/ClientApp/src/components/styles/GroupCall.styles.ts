@@ -15,7 +15,7 @@ export const containerStyles: IStackStyles = {
 };
 export const paneStyles: IStackItemStyles = {
   root: {
-    width: '17.875rem'
+    width: '20.875rem'
   }
 };
 export const overlayStyles: IStackItemStyles = {
