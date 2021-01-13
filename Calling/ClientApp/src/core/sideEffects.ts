@@ -354,46 +354,46 @@ export const getFile = (fileId: string) => {
   };
 };
 
-export const sendFile =  (file: File) => {
+export const sendFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
-  try {
-  const state = getState();
-    const data = new FormData();
-    data.append('file', file);
-    data.append('fileName', file.name);
-    data.append('GroupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data
-    };
-    let sendFileResponse = await fetch('/files', sendFileRequestOptions);
-    return sendFileResponse.ok;
-  } catch (error) {
-    console.error('Failed at sending file, Error: ', error);
-    return false;
+    try {
+      const state = getState();
+      const data = new FormData();
+      data.append('file', file);
+      data.append('fileName', file.name);
+      data.append('groupId', state.calls.group);
+      let sendFileRequestOptions = {
+        method: 'POST',
+        body: data
+      };
+      let sendFileResponse = await fetch('/files', sendFileRequestOptions);
+      return sendFileResponse.ok;
+    } catch (error) {
+      console.error('Failed at sending file, Error: ', error);
+      return false;
+    }
   }
-}
 };
 
 export const sendImage = async (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
-  const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
+    const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
 
-  try {
-    const state = getState();
-    const data = new FormData();
-    data.append('image', base64String);
-    data.append('fileName', 'user_photo.png');
-    data.append('GroupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data
-    };
-    let sendFileResponse = await fetch('/files', sendFileRequestOptions);
-    return sendFileResponse.ok;
-  } catch (error) {
-    console.error('Failed at sending image, Error: ', error);
-    return false;
+    try {
+      const state = getState();
+      const data = new FormData();
+      data.append('image', base64String);
+      data.append('fileName', 'user_photo.png');
+      data.append('groupId', state.calls.group);
+      let sendFileRequestOptions = {
+        method: 'POST',
+        body: data
+      };
+      let sendFileResponse = await fetch('/files', sendFileRequestOptions);
+      return sendFileResponse.ok;
+    } catch (error) {
+      console.error('Failed at sending image, Error: ', error);
+      return false;
+    }
   }
-}
 };
