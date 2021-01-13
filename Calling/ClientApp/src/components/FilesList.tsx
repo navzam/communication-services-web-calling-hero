@@ -6,6 +6,7 @@ export interface FilesListProps {
         filename: string;
         imageUrl: string | null;
     }>;
+    groupId: string;
 }
 
 export default (props: FilesListProps): JSX.Element => {
@@ -26,7 +27,7 @@ export default (props: FilesListProps): JSX.Element => {
                 iconName: 'Download',
             },
             // TODO: This only works because the API is currently not authenticated
-            href: `http://localhost:5000/files/${fileId}`,
+            href: `http://localhost:5000/groups/${props.groupId}/files/${fileId}`,
             target: '_blank',
             onClick: e => e.stopPropagation(),
             ariaLabel: 'download file',

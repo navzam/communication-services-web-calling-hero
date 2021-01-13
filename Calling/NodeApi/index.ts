@@ -52,13 +52,19 @@ app.get('/userToken', async (req, res) => {
     });
 });
 
-app.get('/files', async (req, res) => {
+app.get('/groups/:groupId/files', async (req, res) => {
+    const groupId = req.params['groupId'];
+
     // TODO: Verify that user is allowed to get files for this chat/call
 
     // Get file info from Table Storage
     const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
     const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-    const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>();
+    const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>({
+        queryOptions: {
+            filter: `PartitionKey eq '${groupId}'`,
+        },
+    });
     const files = [];
     for await (const entity of entitiesIter) {
         files.push({
@@ -71,7 +77,8 @@ app.get('/files', async (req, res) => {
     return res.status(200).send(files);
 });
 
-app.get('/files/:fileId', async (req, res) => {
+app.get('/groups/:groupId/files/:fileId', async (req, res) => {
+    const groupId = req.params['groupId'];
     const fileId = req.params['fileId'];
 
     // TODO: Verify that user is allowed to get files for this chat/call
@@ -81,8 +88,18 @@ app.get('/files/:fileId', async (req, res) => {
     const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
 
     // Get file info from Table Storage
-    const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(fileId, fileId);
-    const fileName = entityResponse.FileName;
+    let fileName: string;
+    try {
+        const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(groupId, fileId);
+        fileName = entityResponse.FileName;
+    } catch (e) {
+        if (e instanceof RestError && e.statusCode === 404) {
+            res.sendStatus(404);
+            return;
+        }
+
+        throw e;
+    }
 
     // Prepare Blob Storage clients and container
     const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
@@ -101,17 +118,15 @@ app.get('/files/:fileId', async (req, res) => {
 interface SendFileRequestBody {
     image?: string;
     fileName?: string;
-    groupId?: string;
 }
 
 interface TableStorageFileMetadata {
     FileId: string;
     FileName: string;
     UploadDateTime: Date;
-    GroupId: string;
 }
 
-app.post('/files', uploadMiddleware.single('file'), async (req, res) => {
+app.post('/groups/:groupId/files', uploadMiddleware.single('file'), async (req, res) => {
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
         return res.status(400).send("Invalid file");
@@ -121,7 +136,8 @@ app.post('/files', uploadMiddleware.single('file'), async (req, res) => {
         return res.status(400).send("Invalid file name");
     }
 
-    if (body?.groupId === undefined) {
+    const groupId = req.params['groupId'];
+    if (groupId === undefined) {
         return res.status(400).send("Invalid group ID");
     }
 
@@ -156,12 +172,11 @@ app.post('/files', uploadMiddleware.single('file'), async (req, res) => {
         }
     }
     const entity: TableEntity<TableStorageFileMetadata> = {
-        partitionKey: blobName,
+        partitionKey: groupId,
         rowKey: blobName,
         FileId: blobName,
         FileName: body.fileName,
         UploadDateTime: new Date(),
-        GroupId: body.groupId,
     };
     tableClient.createEntity(entity);
     console.log('Added file data to table');

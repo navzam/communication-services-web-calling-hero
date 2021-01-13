@@ -327,7 +327,8 @@ const subscribeToDeviceManager = async (deviceManager: DeviceManager, dispatch: 
 };
 
 export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
-  const response = await fetch('/files');
+  const state = getState();
+  const response = await fetch(`/groups/${state.calls.group}/files`);
   const responseJson: { id: string, name: string, uploadDateTime: string }[] = await response.json();
   const files = responseJson.map(item => ({ id: item.id, filename: item.name, }));
 
@@ -346,7 +347,8 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
 
 export const getFile = (fileId: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
-    const response = await fetch(`/files/${fileId}`);
+    const state = getState();
+    const response = await fetch(`/groups/${state.calls.group}/files/${fileId}`);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
     // Update files with new image URLs
@@ -366,7 +368,7 @@ export const sendFile = (file: File) => {
         method: 'POST',
         body: data
       };
-      let sendFileResponse = await fetch('/files', sendFileRequestOptions);
+      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
       return sendFileResponse.ok;
     } catch (error) {
       console.error('Failed at sending file, Error: ', error);
@@ -375,7 +377,7 @@ export const sendFile = (file: File) => {
   }
 };
 
-export const sendImage = async (dataUrl: string) => {
+export const sendImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
 
@@ -389,7 +391,7 @@ export const sendImage = async (dataUrl: string) => {
         method: 'POST',
         body: data
       };
-      let sendFileResponse = await fetch('/files', sendFileRequestOptions);
+      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
       return sendFileResponse.ok;
     } catch (error) {
       console.error('Failed at sending image, Error: ', error);

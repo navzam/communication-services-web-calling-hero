@@ -4,7 +4,8 @@ import FilesList from '../components/FilesList';
 import { } from '@azure/communication-common';
 
 const mapStateToProps = (state: State) => ({
-    files: state.files.files
+    files: state.files.files,
+    groupId: state.calls.group
 });
 
 const connector: any = connect(mapStateToProps);
