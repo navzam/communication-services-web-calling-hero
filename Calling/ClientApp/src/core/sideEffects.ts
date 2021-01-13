@@ -340,7 +340,7 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
     if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
     // TODO: should this be dispatched?
     (dispatch as any)(getFile(imageFile.id));
-    // getFile(imageFile.id)(dispatch, getState);
+     getFile(imageFile.id)(dispatch, getState);
   }
 };
 
@@ -349,17 +349,19 @@ export const getFile = (fileId: string) => {
     const response = await fetch(`/files/${fileId}`);
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-
     // Update files with new image URLs
     dispatch(setFileImageUrl(fileId, objectUrl));
   };
 };
 
-export const sendFile = async (file: File) => {
+export const sendFile =  (file: File) => {
+  return async (dispatch: Dispatch, getState: () => State) => {
   try {
+  const state = getState();
     const data = new FormData();
     data.append('file', file);
     data.append('fileName', file.name);
+    data.append('GroupId', state.calls.group);
     let sendFileRequestOptions = {
       method: 'POST',
       body: data
@@ -370,15 +372,19 @@ export const sendFile = async (file: File) => {
     console.error('Failed at sending file, Error: ', error);
     return false;
   }
+}
 };
 
 export const sendImage = async (dataUrl: string) => {
+  return async (dispatch: Dispatch, getState: () => State) => {
   const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
 
   try {
+    const state = getState();
     const data = new FormData();
     data.append('image', base64String);
     data.append('fileName', 'user_photo.png');
+    data.append('GroupId', state.calls.group);
     let sendFileRequestOptions = {
       method: 'POST',
       body: data
@@ -389,4 +395,5 @@ export const sendImage = async (dataUrl: string) => {
     console.error('Failed at sending image, Error: ', error);
     return false;
   }
+}
 };

@@ -101,23 +101,28 @@ app.get('/files/:fileId', async (req, res) => {
 interface SendFileRequestBody {
     image?: string;
     fileName?: string;
+    GroupId?: string;
 }
 
 interface TableStorageFileMetadata {
     FileId: string;
     FileName: string;
     UploadDateTime: Date;
+    GroupId: string;
 }
 
 app.post('/files', uploadMiddleware.single('file'), async (req, res) => {
     const body = req.body as SendFileRequestBody;
-
     if (req.file === undefined && body?.image === undefined) {
         return res.status(400).send("Invalid file");
     }
 
     if (body?.fileName === undefined) {
         return res.status(400).send("Invalid file name");
+    }
+
+    if (body?.GroupId === undefined) {
+        return res.status(400).send("Invalid Group ID");
     }
 
     // Prepare Blob Storage clients and container
@@ -156,6 +161,7 @@ app.post('/files', uploadMiddleware.single('file'), async (req, res) => {
         FileId: blobName,
         FileName: body.fileName,
         UploadDateTime: new Date(),
+        GroupId: body.GroupId,
     };
     tableClient.createEntity(entity);
     console.log('Added file data to table');

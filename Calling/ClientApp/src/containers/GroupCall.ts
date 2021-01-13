@@ -52,8 +52,8 @@ const mapDispatchToProps = (dispatch: any) => ({
   },
   setLocalVideoStream: (localVideoStream: LocalVideoStream) => dispatch(setLocalVideoStream(localVideoStream)),
   setAttempts: (attempts: number) => dispatch(callRetried(attempts)),
-  onFileChosen: (file: File) => sendFile(file),
-  onPhotoTaken: (dataUrl: string) => sendImage(dataUrl),
+  onFileChosen: (file: File) => dispatch(sendFile(file)),
+  onPhotoTaken: (dataUrl: string) => dispatch(sendImage(dataUrl)),
   updateFiles: () => dispatch(getFiles)
 });
 
