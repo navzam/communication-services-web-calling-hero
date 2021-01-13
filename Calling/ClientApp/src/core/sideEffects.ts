@@ -340,7 +340,7 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
     if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
     // TODO: should this be dispatched?
     (dispatch as any)(getFile(imageFile.id));
-     getFile(imageFile.id)(dispatch, getState);
+    // getFile(imageFile.id)(dispatch, getState);
   }
 };
 
