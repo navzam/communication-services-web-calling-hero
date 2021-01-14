@@ -328,14 +328,20 @@ const subscribeToDeviceManager = async (deviceManager: DeviceManager, dispatch: 
 
 export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
   const state = getState();
-  const response = await fetch(`/groups/${state.calls.group}/files`);
+  const userId = state.sdk.userId;
+  if (userId === undefined) {
+    console.error(`Failed to make getFiles() API call because userId is undefined`);
+    return;
+  }
+
+  const response = await fetch(`/groups/${state.calls.group}/files`, { headers: { 'Authorization': userId } });
   const responseJson: { id: string, name: string, uploadDateTime: string }[] = await response.json();
   const files = responseJson.map(item => ({ id: item.id, filename: item.name, }));
 
   dispatch(setFiles(files));
 
   const imageFiles = responseJson.filter(item => item.name.toLowerCase().endsWith('.png') || item.name.toLowerCase().endsWith('.jpg'));
-  const currentFiles = getState().files.files;
+  const currentFiles = state.files.files;
   for (const imageFile of imageFiles) {
     // Skip this image file if we already have an image URL for it
     if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
@@ -348,7 +354,13 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
 export const getFile = (fileId: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
-    const response = await fetch(`/groups/${state.calls.group}/files/${fileId}`);
+    const userId = state.sdk.userId;
+    if (userId === undefined) {
+      console.error(`Failed to make getFiles() API call because userId is undefined`);
+      return;
+    }
+
+    const response = await fetch(`/groups/${state.calls.group}/files/${fileId}`, { headers: { 'Authorization': userId } });
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
     // Update files with new image URLs
@@ -358,16 +370,26 @@ export const getFile = (fileId: string) => {
 
 export const sendFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
+    const state = getState();
+    const userId = state.sdk.userId;
+    if (userId === undefined) {
+      console.error(`Failed to make getFiles() API call because userId is undefined`);
+      return;
+    }
+
+    const data = new FormData();
+    data.append('file', file);
+    data.append('fileName', file.name);
+    data.append('groupId', state.calls.group);
+    let sendFileRequestOptions = {
+      method: 'POST',
+      body: data,
+      headers: {
+        'Authorization': userId
+      }
+    };
+
     try {
-      const state = getState();
-      const data = new FormData();
-      data.append('file', file);
-      data.append('fileName', file.name);
-      data.append('groupId', state.calls.group);
-      let sendFileRequestOptions = {
-        method: 'POST',
-        body: data
-      };
       let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
       return sendFileResponse.ok;
     } catch (error) {
@@ -381,16 +403,26 @@ export const sendImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
 
+    const state = getState();
+    const userId = state.sdk.userId;
+    if (userId === undefined) {
+      console.error(`Failed to make getFiles() API call because userId is undefined`);
+      return;
+    }
+    
+    const data = new FormData();
+    data.append('image', base64String);
+    data.append('fileName', 'user_photo.png');
+    data.append('groupId', state.calls.group);
+    let sendFileRequestOptions = {
+      method: 'POST',
+      body: data,
+      headers: {
+        'Authorization': userId
+      }
+    };
+
     try {
-      const state = getState();
-      const data = new FormData();
-      data.append('image', base64String);
-      data.append('fileName', 'user_photo.png');
-      data.append('groupId', state.calls.group);
-      let sendFileRequestOptions = {
-        method: 'POST',
-        body: data
-      };
       let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
       return sendFileResponse.ok;
     } catch (error) {

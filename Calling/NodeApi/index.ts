@@ -1,12 +1,21 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import express from 'express';
+import express, { RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
 import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/storage-blob';
 import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
+
+// TODO: move to declaration file
+declare global {
+    namespace Express {
+        export interface Request {
+            userId: string;
+        }
+    }
+}
 
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
@@ -35,6 +44,19 @@ const [
 const blobContainerName = 'files';
 const tableName = 'fileMetadata';
 
+// express middleware to validate Authorization header
+const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
+    const authValue = req.header('Authorization');
+    if (!authValue || !authValue.startsWith('user')) {
+        res.sendStatus(403);
+        return;
+    }
+
+    req.userId = authValue;
+
+    next();
+};
+
 app.get('/userToken', async (req, res) => {
     const identityClient = new CommunicationIdentityClient(acsConnectionString);
 
@@ -52,8 +74,9 @@ app.get('/userToken', async (req, res) => {
     });
 });
 
-app.get('/groups/:groupId/files', async (req, res) => {
+app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     const groupId = req.params['groupId'];
+    const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
 
@@ -77,11 +100,13 @@ app.get('/groups/:groupId/files', async (req, res) => {
     return res.status(200).send(files);
 });
 
-app.get('/groups/:groupId/files/:fileId', async (req, res) => {
+app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) => {
     const groupId = req.params['groupId'];
-    const fileId = req.params['fileId'];
+    const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+
+    const fileId = req.params['fileId'];
 
     // Prepare Table Storage clients
     const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
@@ -126,7 +151,12 @@ interface TableStorageFileMetadata {
     UploadDateTime: Date;
 }
 
-app.post('/groups/:groupId/files', uploadMiddleware.single('file'), async (req, res) => {
+app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('file'), async (req, res) => {
+    const groupId = req.params['groupId'];
+    const userId = req.userId;
+
+    // TODO: Verify that user is allowed to get files for this chat/call
+
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
         return res.status(400).send("Invalid file");
@@ -136,7 +166,6 @@ app.post('/groups/:groupId/files', uploadMiddleware.single('file'), async (req, 
         return res.status(400).send("Invalid file name");
     }
 
-    const groupId = req.params['groupId'];
     if (groupId === undefined) {
         return res.status(400).send("Invalid group ID");
     }
