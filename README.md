@@ -4,7 +4,9 @@
 
 This is a sample application to show how the ACS Calling Web SDK can be used to build a group calling experience. 
 The client-side application is a React based user interface which uses Redux for handling complex state while leveraging Microsoft Fluent UI. 
-Powering this front-end is a C# web application powered by ASP.NET Core to connect this application with Azure Communication Services.
+Powering this front-end is a TypeScript web API powered by Node/Express to connect this application with Azure Communication Services.
+
+The sample has been extended to include file sharing capabilities between meeting participants.
 
 Additional documentation for this sample can be found on [Microsoft Docs](https://docs.microsoft.com/azure/communication-services/samples/calling-hero-sample).
 
@@ -14,8 +16,6 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 
 - Create an Azure account with an active subscription. For details, see [Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F)
 - [Node.js (12.18.4 and above)](https://nodejs.org/en/download/)
-- [Visual Studio (2019 and above)](https://visualstudio.microsoft.com/vs/)
-- [.NET Core 3.1](https://dotnet.microsoft.com/download/dotnet-core/3.1) (Make sure to install version that corresponds with your visual studio instance, 32 vs 64 bit)
 - Create an Azure Communication Services resource. For details, see [Create an Azure Communication Resource](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource). You'll need to record your resource **connection string** for this quickstart.
 - Create an Azure Storage Account (general purpose v2) resource. You'll need to record your resource **connection string** for this quickstart.
 
@@ -27,33 +27,35 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 		- ./Calling/ClientApp/src/Containers : Connects the redux functionality to the React components
 		- ./Calling/ClientApp/src/Core : Containers a redux wrapper around the ACS Web Calling SDK
 	- ./ClientApp/src/index.js : Entry point for the client app
-- ./Calling/Controllers : Server app core logic for client app to get a token to use with the ACS Web Calling SDK
-- ./Calling/Program.cs : Entry point for the server app program logic
-- ./Calling/Startup.cs : Entry point for the server app startup logic
+- ./Calling/NodeApi : Backend API for client app to get a token to use with the ACS Web Calling SDK, as well as the file APIs
+	- ./Calling/NodeApi/index.ts: Entry point for the API
 
 ## Before running the sample for the first time
 1. Open an instance of PowerShell, Windows Terminal, Command Prompt or equivalent and navigate to the directory that you'd like to clone the sample to.
 2. `git clone https://github.com/Azure-Samples/communication-services-web-calling-hero.git`
 3. Get the `Connection String` from the Azure portal for the ACS resource. For more information on connection strings, see [Create an Azure Communication Resources](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource)
 4. Get the `Connection String` from the Azure portal for the Azure Storage resource.
-5. Add the connection strings to the **Calling/appsetting.json** file found under the Calling folder. Input your connection string in the variables: `ResourceConnectionString` and `StorageAccountConnectionString`.
+5. Create a `.env` file in `./Calling/NodeApi` with the following keys and fill in the values from your ACS and Storage connection strings:
+	```
+	ACS_CONNECTION_STRING=
+	STORAGE_CONNECTION_STRING=
+	STORAGE_ACCOUNT_NAME=
+	STORAGE_ACCOUNT_KEY=
+	```
 
-## Locally deploying the sample app
+## Locally running the sample app
 
-1. Go to Calling folder and open `Calling.csproj` solution in Visual Studio
-2. Run `Calling` project. The browser will open at localhost:5001
+1. Go to the `./Calling/NodeApi` folder and run `npm install` followed by `npm run watch`.
+2. Go to the `./Calling/ClientApp` folder and run `npm install` followed by `npm run start`.
+3. Open a browser to `localhost:3000`
 
 ### Troubleshooting
 
-1. Solution doesn\'t build, it throws errors during NPM installation/build
-	
-	Clean/rebuild the C# solution
+N/A
 
 ## Publish to Azure
 
-1. Right click the `Calling` project and select Publish.
-2. Create a new publish profile and select your app name, Azure subscription, resource group and etc.
-3. Before publish, add your connection string with `Edit App Service Settings`, and fill in `ResourceConnectionString` as key and connection string (copy from appsettings.json) as value
+N/A
 
 ## Additional Reading
 
@@ -61,4 +63,3 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 - [Redux](https://redux.js.org/) - Client-side state management
 - [FluentUI](https://developer.microsoft.com/en-us/fluentui#/) - Microsoft powered UI library
 - [React](https://reactjs.org/) - Library for building user interfaces
-- [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/introduction-to-aspnet-core?view=aspnetcore-3.1) - Framework for building web applications
