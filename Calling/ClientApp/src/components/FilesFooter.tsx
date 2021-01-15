@@ -11,6 +11,7 @@ export interface FilesFooterProps {
 
 const attachFileString = 'Attach file';
 const takePhotoString = 'Take photo';
+var fileSizeError=false;
 
 const attachFileClicked = () => {
     console.log(`attach file clicked`);
@@ -25,7 +26,12 @@ export default (props: FilesFooterProps): JSX.Element => {
         }
     
         const file = event.target.files[0];
-        props.onFileChosen(file);
+        var sizeInMB = (file.size / (1024*1024)).toFixed(2);
+        if(parseInt(sizeInMB)>5){
+            fileSizeError=true; 
+        }
+        if(!fileSizeError)
+            props.onFileChosen(file);
     };
 
     const takePhotoClicked = () => {
@@ -39,6 +45,19 @@ export default (props: FilesFooterProps): JSX.Element => {
 
     return <Stack styles={paneFooterStyles} tokens={paneFooterTokens}>
         <Separator />
+        {fileSizeError === true ?
+            <div id="failMessage" className="overlay">
+                <div className="popup" >
+                    <h2>File upload failed</h2>
+                    <button className="close" onClick={attachFileClicked}>×</button>
+
+                    <div className="content">
+                        Please upload file with size less than 5 MB
+                    </div>
+                </div>
+            </div>
+            : null
+        }
         <PrimaryButton className={attachButtonStyle} onClick={attachFileClicked}>
             <PaperclipIcon className={attachIconStyle} />
             {attachFileString}
