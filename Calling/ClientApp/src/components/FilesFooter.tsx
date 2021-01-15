@@ -1,4 +1,4 @@
-import { Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
+import { IconButton, Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
 import { CameraIcon, PaperclipIcon } from "@fluentui/react-northstar";
 import React, { useState } from "react";
 import PhotoCapture from "./PhotoCapture";
@@ -48,6 +48,7 @@ export default (props: FilesFooterProps): JSX.Element => {
             {takePhotoString}
         </PrimaryButton>
         <Modal isOpen={takingPhoto}>
+            <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setTakingPhoto(false)} />
             {takingPhoto && <PhotoCapture onPhotoCaptured={onPhotoCaptured} />}
         </Modal>
         <input id="file-input" type="file" name="name" onChange={fileInputChanged} style={{ display: 'none' }} />
