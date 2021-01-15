@@ -67,6 +67,7 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     // TODO: Verify that user is allowed to get files for this chat/call
 
     const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
+    files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
 
     return res.status(200).send(files);
 });
