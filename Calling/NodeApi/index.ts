@@ -15,13 +15,9 @@ const PORT = 5000;
 const [
     acsConnectionString,
     storageConnectionString,
-    storageAccountName,
-    storageAccountKey
 ] = [
     'ACS_CONNECTION_STRING',
     'STORAGE_CONNECTION_STRING',
-    'STORAGE_ACCOUNT_NAME',
-    'STORAGE_ACCOUNT_KEY'
 ].map(envKey => {
     const envValue = process.env[envKey];
     if (envValue === undefined) {
@@ -70,7 +66,7 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
 
     // TODO: Verify that user is allowed to get files for this chat/call
 
-    const files = await getFilesForGroup(groupId, storageAccountName, storageAccountKey, tableName);
+    const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
 
     return res.status(200).send(files);
 });
@@ -85,7 +81,7 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
 
     let file: FileMetadata;
     try {
-        file = await getFileMetadata(groupId, fileId, storageAccountName, storageAccountKey, tableName);
+        file = await getFileMetadata(groupId, fileId, storageConnectionString, tableName);
     } catch (e) {
         if (e instanceof FileServiceError) {
             res.sendStatus(404);
@@ -146,7 +142,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
         name: body.fileName,
         uploadDateTime: new Date(),
     };
-    await addFileMetadata(groupId, newFileMetadata, storageAccountName, storageAccountKey, tableName);
+    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, tableName);
 
     console.log('Added file data to table');
 

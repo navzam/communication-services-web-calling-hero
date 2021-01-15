@@ -39,8 +39,6 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 	```
 	ACS_CONNECTION_STRING=
 	STORAGE_CONNECTION_STRING=
-	STORAGE_ACCOUNT_NAME=
-	STORAGE_ACCOUNT_KEY=
 	```
 
 ## Locally running the sample app

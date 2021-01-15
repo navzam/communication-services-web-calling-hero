@@ -1,4 +1,4 @@
-import { TableClient, TableEntity, TablesSharedKeyCredential } from "@azure/data-tables";
+import { TableClient, TableEntity } from "@azure/data-tables";
 import { BlobServiceClient, RestError } from "@azure/storage-blob";
 
 export type FileServiceErrorType = 'FileNotFound' | 'FileTooLarge';
@@ -29,9 +29,8 @@ interface TableStorageFileMetadata {
 
 // Gets file metadata for all files in a group
 // Uses Table Storage
-export async function getFilesForGroup(groupId: string, storageAccountName: string, storageAccountKey: string, tableName: string): Promise<FileMetadata[]> {
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
+export async function getFilesForGroup(groupId: string, storageConnectionString: string, tableName: string): Promise<FileMetadata[]> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
     const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>({
         queryOptions: {
             filter: `PartitionKey eq '${groupId}'`,
@@ -51,9 +50,8 @@ export async function getFilesForGroup(groupId: string, storageAccountName: stri
 
 // Gets file metadata for a single file
 // Uses Table Storage
-export async function getFileMetadata(groupId: string, fileId: string, storageAccountName: string, storageAccountKey: string, tableName: string): Promise<FileMetadata> {
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
+export async function getFileMetadata(groupId: string, fileId: string, storageConnectionString: string, tableName: string): Promise<FileMetadata> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
 
     try {
         const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(groupId, fileId);
@@ -73,9 +71,8 @@ export async function getFileMetadata(groupId: string, fileId: string, storageAc
 
 // Adds file metadata for a single file
 // Uses Table Storage
-export async function addFileMetadata(groupId: string, fileMetadata: FileMetadata, storageAccountName: string, storageAccountKey: string, tableName: string): Promise<void> {
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
+export async function addFileMetadata(groupId: string, fileMetadata: FileMetadata, storageConnectionString: string, tableName: string): Promise<void> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
     try {
         await tableClient.create();
     } catch (e) {
@@ -99,8 +96,8 @@ export async function addFileMetadata(groupId: string, fileMetadata: FileMetadat
 
 // Gets stream for a single file
 // Uses Blob Storage
-export async function downloadFile(fileId: string, blobStorageConnectionString: string, blobContainerName: string): Promise<NodeJS.ReadableStream> {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(blobStorageConnectionString);
+export async function downloadFile(fileId: string, storageConnectionString: string, blobContainerName: string): Promise<NodeJS.ReadableStream> {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
     const containerClient = blobServiceClient.getContainerClient(blobContainerName);
     // await containerClient.createIfNotExists();
     const blobClient = containerClient.getBlockBlobClient(fileId);
@@ -115,8 +112,8 @@ export async function downloadFile(fileId: string, blobStorageConnectionString: 
 
 // Uploads a single file
 // Uses Blob Storage
-export async function uploadFile(fileId: string, fileBuffer: Buffer, blobStorageConnectionString: string, blobContainerName: string): Promise<void> {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(blobStorageConnectionString);
+export async function uploadFile(fileId: string, fileBuffer: Buffer, storageConnectionString: string, blobContainerName: string): Promise<void> {
+    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
     const containerClient = blobServiceClient.getContainerClient(blobContainerName);
     await containerClient.createIfNotExists();
     const blobClient = containerClient.getBlockBlobClient(fileId);
