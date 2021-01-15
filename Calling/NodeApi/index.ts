@@ -5,17 +5,7 @@ import express, { RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
-import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/storage-blob';
-import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
-
-// TODO: move to declaration file
-declare global {
-    namespace Express {
-        export interface Request {
-            userId: string;
-        }
-    }
-}
+import { addFileMetadata, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, uploadFile } from './fileService';
 
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
@@ -80,22 +70,7 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
 
     // TODO: Verify that user is allowed to get files for this chat/call
 
-    // Get file info from Table Storage
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-    const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>({
-        queryOptions: {
-            filter: `PartitionKey eq '${groupId}'`,
-        },
-    });
-    const files = [];
-    for await (const entity of entitiesIter) {
-        files.push({
-            id: entity.FileId,
-            name: entity.FileName,
-            uploadDateTime: entity.UploadDateTime,
-        });
-    }
+    const files = await getFilesForGroup(groupId, storageAccountName, storageAccountKey, tableName);
 
     return res.status(200).send(files);
 });
@@ -108,17 +83,11 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
 
     const fileId = req.params['fileId'];
 
-    // Prepare Table Storage clients
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-
-    // Get file info from Table Storage
-    let fileName: string;
+    let file: FileMetadata;
     try {
-        const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(groupId, fileId);
-        fileName = entityResponse.FileName;
+        file = await getFileMetadata(groupId, fileId, storageAccountName, storageAccountKey, tableName);
     } catch (e) {
-        if (e instanceof RestError && e.statusCode === 404) {
+        if (e instanceof FileServiceError) {
             res.sendStatus(404);
             return;
         }
@@ -126,29 +95,17 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
         throw e;
     }
 
-    // Prepare Blob Storage clients and container
-    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
-    const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    // await containerClient.createIfNotExists();
-    const blobClient = containerClient.getBlockBlobClient(fileId);
+    const fileStream = await downloadFile(fileId, storageConnectionString, blobContainerName);
 
-    const blobStream = await blobClient.download();
-
-    res.attachment(fileName);
+    res.attachment(file.name);
     res.contentType('application/octet-stream');
     res.status(200);
-    blobStream.readableStreamBody?.pipe(res);
+    fileStream.pipe(res);
 });
 
 interface SendFileRequestBody {
     image?: string;
     fileName?: string;
-}
-
-interface TableStorageFileMetadata {
-    FileId: string;
-    FileName: string;
-    UploadDateTime: Date;
 }
 
 app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('file'), async (req, res) => {
@@ -159,7 +116,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
-        return res.status(400).send("Invalid file");
+        return res.status(400).send("Invalid file/image");
     }
 
     if (body?.fileName === undefined) {
@@ -170,44 +127,27 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
         return res.status(400).send("Invalid group ID");
     }
 
-    // Prepare Blob Storage clients and container
-    const blobName: string = uuidv4();
-    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
-    const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    await containerClient.createIfNotExists();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    
-    let uploadResponse: BlobUploadCommonResponse;
+    // Upload file to Blob Storage
+    const newFileId: string = uuidv4();
     if (req.file !== undefined) {
         console.log(`Got file length: ${req.file.size}`);
-        uploadResponse = await blobClient.uploadData(req.file.buffer);
+        await uploadFile(newFileId, req.file.buffer, storageConnectionString, blobContainerName);
     } else {
         console.log(`Got image length: ${body.image?.length}`);
-        const buffer = Buffer.from(body.image!, "base64");
-        uploadResponse = await blobClient.uploadData(buffer);
+        const buffer = Buffer.from(body.image!, 'base64');
+        await uploadFile(newFileId, buffer, storageConnectionString, blobContainerName);
     }
 
-    console.log(`Uploaded blob: ${blobName}`);
+    console.log(`Uploaded blob: ${newFileId}`);
 
-    // Store file info in Table Storage
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-    try {
-        await tableClient.create();
-    } catch (e) {
-        if (e instanceof RestError && e.statusCode === 409) {
-        } else {
-            throw e;
-        }
-    }
-    const entity: TableEntity<TableStorageFileMetadata> = {
-        partitionKey: groupId,
-        rowKey: blobName,
-        FileId: blobName,
-        FileName: body.fileName,
-        UploadDateTime: new Date(),
+    // Add file metadata to Table Storage
+    const newFileMetadata: FileMetadata = {
+        id: newFileId,
+        name: body.fileName,
+        uploadDateTime: new Date(),
     };
-    tableClient.createEntity(entity);
+    await addFileMetadata(groupId, newFileMetadata, storageAccountName, storageAccountKey, tableName);
+
     console.log('Added file data to table');
 
     return res.sendStatus(204);
