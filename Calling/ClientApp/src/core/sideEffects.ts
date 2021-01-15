@@ -29,7 +29,7 @@ import {
   setDeviceManager
 } from './actions/devices';
 import { addScreenShareStream, resetStreams, removeScreenShareStream } from './actions/streams';
-import { setFileImageUrl, setFiles } from './actions/files';
+import { setFileBlobUrl, setFileIsDownloading, setFiles } from './actions/files';
 import { State } from './reducers';
 
 export const setMicrophone = (mic: boolean) => {
@@ -344,7 +344,7 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
   const currentFiles = state.files.files;
   for (const imageFile of imageFiles) {
     // Skip this image file if we already have an image URL for it
-    if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
+    if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.blobUrl !== null) continue;
     // TODO: should this be dispatched?
     (dispatch as any)(getFile(imageFile.id));
     // getFile(imageFile.id)(dispatch, getState);
@@ -360,11 +360,15 @@ export const getFile = (fileId: string) => {
       return;
     }
 
+    dispatch(setFileIsDownloading(fileId, true));
+
     const response = await fetch(`/groups/${state.calls.group}/files/${fileId}`, { headers: { 'Authorization': userId } });
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-    // Update files with new image URLs
-    dispatch(setFileImageUrl(fileId, objectUrl));
+
+    // Update file with new blob URL
+    dispatch(setFileBlobUrl(fileId, objectUrl));
+    dispatch(setFileIsDownloading(fileId, false));
   };
 };
 
