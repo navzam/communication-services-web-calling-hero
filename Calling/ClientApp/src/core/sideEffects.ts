@@ -372,66 +372,55 @@ export const getFile = (fileId: string) => {
   };
 };
 
-export const sendFile = (file: File) => {
+export const uploadSelectedFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
     if (userId === undefined) {
-      console.error(`Failed to make getFiles() API call because userId is undefined`);
-      return;
-    }
-
-    const data = new FormData();
-    data.append('file', file);
-    data.append('fileName', file.name);
-    data.append('groupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data,
-      headers: {
-        'Authorization': userId
-      }
-    };
-
-    try {
-      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
-      return sendFileResponse.ok;
-    } catch (error) {
-      console.error('Failed at sending file, Error: ', error);
+      console.error(`Failed to make sendFile() API call because userId is undefined`);
       return false;
     }
+
+    return await uploadFile(userId, state.calls.group, file, file.name);
   }
 };
 
-export const sendImage = (dataUrl: string) => {
+export const uploadCapturedImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
+    const state = getState();
+    const userId = state.sdk.userId;
+    if (userId === undefined) {
+      console.error(`Failed to make sendImage() API call because userId is undefined`);
+      return false;
+    }
+
     const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
-
-    const state = getState();
-    const userId = state.sdk.userId;
-    if (userId === undefined) {
-      console.error(`Failed to make getFiles() API call because userId is undefined`);
-      return;
-    }
-    
-    const data = new FormData();
-    data.append('image', base64String);
-    data.append('fileName', 'user_photo.png');
-    data.append('groupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data,
-      headers: {
-        'Authorization': userId
-      }
-    };
-
-    try {
-      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
-      return sendFileResponse.ok;
-    } catch (error) {
-      console.error('Failed at sending image, Error: ', error);
-      return false;
-    }
+    return await uploadFile(userId, state.calls.group, base64String, 'user_photo.png');
   }
 };
+
+const uploadFile = async (userId: string, groupId: string, media: string | File, fileName: string) => {
+  const data = new FormData();
+  if (media instanceof File) {
+    data.append('file', media);
+  } else {
+    data.append('image', media);
+  }
+  data.append('fileName', fileName);
+  data.append('groupId', groupId);
+  let sendFileRequestOptions = {
+    method: 'POST',
+    body: data,
+    headers: {
+      'Authorization': userId
+    }
+  };
+
+  try {
+    let sendFileResponse = await fetch(`/groups/${groupId}/files`, sendFileRequestOptions);
+    return sendFileResponse.ok;
+  } catch (error) {
+    console.error('Failed at sending image, Error: ', error);
+    return false;
+  }
+}
