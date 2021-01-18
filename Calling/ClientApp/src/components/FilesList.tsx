@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { DocumentCard, DocumentCardActions, DocumentCardDetails, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Link, Modal, Spinner } from '@fluentui/react';
+import { DocumentCard, DocumentCardActions, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Link, Modal, Spinner, Stack } from '@fluentui/react';
+import { filesListStyle, filesGridStyle } from './styles/FilesList.styles';
 
 export interface FilesListProps {
     files: Map<string, {
@@ -17,7 +18,7 @@ export default (props: FilesListProps): JSX.Element => {
     const [downloadClicked, setDownloadClicked] = useState<Map<string, boolean>>(new Map<string, boolean>());
 
     if (!props.files || props.files.size === 0) {
-        return <div>No files have been shared yet.</div>
+        return <div className={filesListStyle}>No files have been shared yet.</div>
     }
 
     const fileGridElements: JSX.Element[] = [];
@@ -54,8 +55,7 @@ export default (props: FilesListProps): JSX.Element => {
                     imageFit={ImageFit.cover}
                     imageSrc={hasImagePreview ? file.blobUrl! : undefined}
                     iconProps={hasImagePreview ? undefined : (isImage ? imageIcon : nonImageIcon)} />
-                <DocumentCardDetails>
-                    <DocumentCardTitle title={file.filename}  shouldTruncate />
+                    <DocumentCardTitle title={file.filename} />
                     { file.isDownloading && <Spinner /> }
                     { downloadClicked.get(fileId) && file.blobUrl !== null && 
                         <Link
@@ -71,26 +71,29 @@ export default (props: FilesListProps): JSX.Element => {
                             Click to download
                         </Link>
                     }
-                </DocumentCardDetails>
                 <DocumentCardActions actions={isImage ? [downloadButton, previewButton] : [downloadButton]} />
             </DocumentCard>
         ));
     });
 
     const numRows = Math.floor(props.files.size / 2);
-    const numCols = 2;
+    const numCols = 1;
 
     return (
         <>
-            <div style={{ height: '100%', display: 'grid', gridTemplateRows: `repeat(${numRows}, 1fr)`, gridTemplateColumns: `repeat(${numCols}, 50%)` }}>
-                {fileGridElements}
+            <div className={filesListStyle}>
+                <div className={filesGridStyle} style={{ gridTemplateRows: `repeat(${numRows}, 1fr)`, gridTemplateColumns: `repeat(${numCols}, 1fr)` }}>
+                    {fileGridElements}
+                </div>
             </div>
             <Modal isOpen={showingPhotoUrl !== null} onDismissed={() => setShowingPhotoUrl(null)}>
                 {showingPhotoUrl &&
-                    <div style={{ width: 640, height: 480 }}>
+                    <Stack>
                         <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setShowingPhotoUrl(null)} />
-                        <img src={showingPhotoUrl} style={{ maxWidth: '100%', maxHeight: '100%' }} />
-                    </div>}
+                        <Stack.Item grow>
+                            <img src={showingPhotoUrl} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                        </Stack.Item>
+                    </Stack>}
             </Modal>
         </>
     );
