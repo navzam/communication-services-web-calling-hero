@@ -134,6 +134,7 @@ export const initCallClient = (userId: string, unsupportedStateHandler: () => vo
       }
 
       callAgent.updateDisplayName(userId);
+      blobAuthorization( dispatch, getState);
 
       let deviceManager: DeviceManager = await callClient.getDeviceManager();
 
@@ -270,6 +271,38 @@ const updateAudioDevices = async (deviceManager: DeviceManager, dispatch: Dispat
     deviceManager.setMicrophone(state.devices.audioDeviceInfo);
   }
 };
+
+export const blobAuthorization = async(
+  dispatch: Dispatch, getState: () => State
+) => {
+   
+  const state = getState();
+  const userId = state.sdk.userId;
+  const groupId=state.calls.group;
+  
+  if (groupId === undefined) {
+    console.log(`Failed to make  API call because groupId is undefined`);
+    return;
+  }
+      if (userId === undefined) {
+      console.log(`Failed to make API call because userId is undefined`);
+      return;
+    }
+      let sendUserDetailsOptions = {
+      method: 'POST',
+      headers: {
+        'Authorization': userId
+      }
+    };
+    
+   try {
+      let sendUserDetailsResponse = await fetch(`/groups/${state.calls.group}/user`, sendUserDetailsOptions);
+      return sendUserDetailsResponse.ok;
+    } catch (error) {
+      console.error('Failed at sending UserDetails, Error: ', error);
+      return false;
+    }
+ };
 
 const updateVideoDevices = async (deviceManager: DeviceManager, dispatch: Dispatch, getState: () => State) => {
   const cameraList: VideoDeviceInfo[] = deviceManager.getCameraList();

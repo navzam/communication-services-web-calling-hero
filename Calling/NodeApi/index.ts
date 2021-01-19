@@ -5,8 +5,14 @@ import express, { RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
-import { addFileMetadata, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, uploadFile } from './fileService';
-
+import { addFileMetadata, addUserDetails, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUserDetails, uploadFile } from './fileService';
+declare global {
+    namespace Express {
+        export interface Request {
+            userId: string;
+        }
+    }
+}
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
 const app = express();
@@ -29,6 +35,7 @@ const [
 
 const blobContainerName = 'files';
 const tableName = 'fileMetadata';
+const userDetailTable='userDetails';
 
 // express middleware to validate Authorization header
 const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
@@ -65,6 +72,9 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403).send(null);
 
     const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
     files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
@@ -77,6 +87,9 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403).send(null);
 
     const fileId = req.params['fileId'];
 
@@ -110,6 +123,9 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403).send(null);
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
@@ -147,6 +163,19 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
 
     console.log('Added file data to table');
 
+    return res.sendStatus(204);
+});
+
+app.post( '/groups/:groupId/user',fakeAuthMiddleware, async (req, res) => {
+    const groupId = req.params['groupId'];
+    const userId = req.userId;
+    if (groupId === undefined) {
+        return res.status(400).send("Invalid group ID");
+    }
+
+    await addUserDetails(groupId, userId,storageConnectionString, userDetailTable);
+    console.log('Added User details to table');
+   
     return res.sendStatus(204);
 });
 
