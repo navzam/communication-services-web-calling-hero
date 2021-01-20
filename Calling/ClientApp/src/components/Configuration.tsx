@@ -106,7 +106,7 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
       setEmptyWarning(false);
       setNameLengthExceedLimit(false);
       if (!isJoining) {
-        props.setup(name, selectedAvatar, props.joinChatHandler, name);
+        props.setup(name, selectedAvatar, props.startCallHandler, name);
         setIsJoining(true);
       }
     }
@@ -122,7 +122,7 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
       props.setAddThreadMemberError(undefined);
       setIsJoining(false);
     } else if (addThreadMemberError === false) {
-      props.joinChatHandler();
+      // props.joinChatHandler();
     }
   }, [addThreadMemberError]);
 
@@ -221,10 +221,10 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
                     setEmptyWarning(true);
                   } else {
                     setEmptyWarning(false);
-                    validateName();
                     props.setUserId(name);
                     props.callAgent.updateDisplayName(name);
-                    props.startCallHandler();
+                    validateName();
+                    // props.startCallHandler();
                   }
                 }}
               >

@@ -14,7 +14,7 @@ import {
 import { ChatThread, ChatThreadMember } from '@azure/communication-chat';
 
 import { ENTER_KEY, MAXIMUM_LENGTH_OF_TOPIC } from '../../src/constants';
-import { getEmoji } from '../core/sideEffects';
+// import { getEmoji } from '../core/sideEffects';
 import InviteFooter from './InviteFooter';
 import MemberItem from './MemberItem';
 import { inputBoxTextStyle } from './styles/ConfigurationScreen.styles';
@@ -64,16 +64,16 @@ export default (props: SidePanelProps): JSX.Element => {
     const fetchData = async () => {
       var needToSet = false;
       for (var i = 0; i < threadMembers.length; i++) {
-        var threadMember = threadMembers[i];
-        var identity = threadMember.user.communicationUserId;
-        var user = users[identity];
-        if (user == null) {
-          needToSet = true;
-          var serverUser = await getEmoji(identity);
-          if (serverUser !== undefined) {
-            users[identity] = { emoji: serverUser.emoji };
-          }
-        }
+        // var threadMember = threadMembers[i];
+        // var identity = threadMember.user.communicationUserId;
+        // var user = users[identity];
+        // if (user == null) {
+        //   needToSet = true;
+        //   var serverUser = await getEmoji(identity);
+        //   if (serverUser !== undefined) {
+        //     users[identity] = { emoji: serverUser.emoji };
+        //   }
+        // }
       }
       if (needToSet) {
         setContosoUsers(users);

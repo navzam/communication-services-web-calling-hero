@@ -41,7 +41,7 @@ const mapDispatchToProps = (dispatch: any) => ({
   updateDevices: () => dispatch(updateDevices()),
   /* chat */
   setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string) => {
-    await dispatch(addUserToThread(displayName, emoji, userId));
+    await dispatch(addUserToThread(displayName, emoji, userId, goToNextScreen));
   },
   isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
   setAddThreadMemberError: async (addThreadMemberError: boolean | undefined) => {

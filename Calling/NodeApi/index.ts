@@ -34,6 +34,7 @@ class CommunicationUserToken {
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
 const app = express();
+app.use(express.json())
 const PORT = 5000;
 
 var tokenStore: {[key: string]: CommunicationUserToken } = {};
@@ -161,6 +162,11 @@ interface SendFileRequestBody {
     fileName?: string;
 }
 
+interface AddUserRequestBody {
+    id: string;
+    displayName: string;
+}
+
 interface TableStorageFileMetadata {
     FileId: string;
     FileName: string;
@@ -250,9 +256,8 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
  });
 
  app.post('/createThread', async(req, res) => {
-    const userId = req.userId;
     const identityClient = new CommunicationIdentityClient(acsConnectionString);
-    var endpointUrl = getEnvironmentUrl();
+
     // create our user
     const userResponse = await identityClient.createUser();
     const tokenResponse = await identityClient.issueToken(userResponse, ["voip", "chat"]);
@@ -268,10 +273,12 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
     let chatThreadClient= await chatClient.createChatThread(createThreadRequest);
     let threadId = chatThreadClient.threadId;
 
-    tokenStore[threadId] = new CommunicationUserToken(threadId, userId, tokenResponse.token);
+    console.log("______moderator id 1: " + tokenResponse.user.communicationUserId);
+    console.log("______thread id 1: " + threadId);
+
+    tokenStore[threadId] = new CommunicationUserToken(threadId, tokenResponse.user.communicationUserId, tokenResponse.token);
 
     return res.status(200).send(threadId);
-
  });
 
  const generateNewModeratorAndThread = async () => {
@@ -279,19 +286,17 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
  };
 
  app.post('/addUser/:threadId', fakeAuthMiddleware, async(req, res) => {
-
     try{
         const threadId = req.params['threadId'];
-        const userId = req.body['id'];
-        const displayName = req.body['displayName'];
+        const body = req.body as AddUserRequestBody;
         const moderator = tokenStore[threadId];
     
         let addMembersRequest =
         {
         members: [
             {
-                user: { communicationUserId: userId },
-                displayName: displayName
+                user: { communicationUserId: body.id },
+                displayName: body.displayName
             }]
             };
     

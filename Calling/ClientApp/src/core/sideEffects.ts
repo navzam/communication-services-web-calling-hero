@@ -478,7 +478,7 @@ export const sendImage = (dataUrl: string) => {
  * Chat functionality
  */
 // This function sets up the user to chat with the thread
-const addUserToThread = (displayName: string, emoji: string, userId: string) => async (dispatch: Dispatch, getState: () => State) => {
+const addUserToThread =  (displayName: string, emoji: string, userId: string, goToNextScreen: Function) => async (dispatch: Dispatch, getState: () => State) => {
   let state: State = getState();
   if (state.thread.threadId === undefined) {
     // todo: fix
@@ -513,8 +513,6 @@ const addUserToThread = (displayName: string, emoji: string, userId: string) => 
   let userAccessTokenCredentialNew = new AzureCommunicationUserCredential(options);
   let chatClient = new ChatClient(environmentUrl, userAccessTokenCredentialNew);
 
-  // set emoji for the user
-
   // subscribe for message, typing indicator, and read receipt
   let chatThreadClient = await chatClient.getChatThreadClient(threadId);
   subscribeForMessage(chatClient, dispatch, getState);
@@ -522,33 +520,25 @@ const addUserToThread = (displayName: string, emoji: string, userId: string) => 
   subscribeForReadReceipt(chatClient, chatThreadClient, dispatch, getState);
 
   dispatch(setThreadId(threadId));
+  console.log("____contoso user id: " + tokenResponse.value.user.id);
+  console.log("____contoso token: " + userToken);
+  console.log("____contoso displayname: " + displayName);
   dispatch(setContosoUser(tokenResponse.value.user.id, userToken, displayName));
   dispatch(setChatClient(chatClient));
 
-  try{
-    await addThreadMemberHelper(
-      threadId,
-      {
-        identity: tokenResponse.value.user.id,
-        token: userToken,
-        displayName: displayName,
-        memberRole: 'User'
-      },
-      dispatch
-    );
-  }catch(error){
-    console.log("____error " + error.message.toString());
-  }
-  // await addThreadMemberHelper(
-  //   threadId,
-  //   {
-  //     identity: tokenResponse.value.user.id,
-  //     token: userToken,
-  //     displayName: displayName,
-  //     memberRole: 'User'
-  //   },
-  //   dispatch
-  // );
+
+  await addThreadMemberHelper(
+    threadId,
+    {
+      identity: tokenResponse.value.user.id,
+      token: userToken,
+      displayName: displayName,
+      memberRole: 'User'
+    },
+    dispatch
+  );
+
+  goToNextScreen();
 };
 
 const subscribeForTypingIndicator = async (chatClient: ChatClient, dispatch: Dispatch) => {
@@ -902,7 +892,7 @@ const addThreadMemberHelper = async (threadId: string, user: User, dispatch: Dis
     };
     let addMemberRequestOptions = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': user.displayName},
       body: JSON.stringify(body)
     };
     let response = await fetch('/addUser/' + threadId, addMemberRequestOptions);
