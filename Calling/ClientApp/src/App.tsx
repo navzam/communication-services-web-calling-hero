@@ -1,16 +1,19 @@
 // © Microsoft Corporation. All rights reserved.
 import React, { useState, useEffect } from 'react';
-import GroupCall from './containers/GroupCall';
+// import GroupCall from './containers/GroupCall';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import { reducer } from './core/reducers';
 import thunk from 'redux-thunk';
 import EndCall from './components/EndCall';
-import HomeScreen from './components/HomeScreen';
+import HomeScreen from './containers/HomeScreen';
 import ConfigurationScreen from './containers/Configuration';
 import { v1 as createGUID } from 'uuid';
 import { loadTheme, initializeIcons } from '@fluentui/react';
 import { utils } from './Utils/Utils';
+
+/* chat */
+import ChatScreen from './containers/ChatScreen';
 
 const sdkVersion = require('../package.json').dependencies['@azure/communication-calling'];
 const lastUpdated = `Last Updated ${utils.getBuildTime()} with @azure/communication-calling:${sdkVersion}`;
@@ -40,6 +43,13 @@ const App = () => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('groupId');
   };
+
+  // const getThreadIdFromUrl = () => {
+  //   const urlParams = new URLSearchParams(window.location.search);
+  //   const threadId = urlParams.get('threadId');
+  //   console.log('The thread id is ' + threadId);
+  //   return threadId;
+  // };
 
   const getGroupId = () => {
     if (groupId) return groupId;
@@ -72,11 +82,22 @@ const App = () => {
       );
     } else if (page === 'call') {
       return (
-        <GroupCall
-          endCallHandler={() => setPage('endCall')}
-          groupId={getGroupId()}
+        // <GroupCall
+        //   endCallHandler={() => setPage('endCall')}
+        //   groupId={getGroupId()}
+        //   userId={createUserId()}
+        //   screenWidth={screenWidth}
+        // />
+        <ChatScreen
+          endChatHandler={() => {
+            setPage('end');
+            // Send up signal that the user wants to leave the chat
+            // Move to to next screen on success
+          }}
           userId={createUserId()}
-          screenWidth={screenWidth}
+          errorHandler={() => {
+            setPage('error');
+          }}
         />
       );
     } else if (page === 'endCall') {
@@ -104,8 +125,12 @@ const App = () => {
     }
   };
 
-  if (getGroupIdFromUrl() && page === 'home') {
-    setPage('configuration');
+  // if (getGroupIdFromUrl() && getThreadIdFromUrl() && page === 'home') {
+  //   setPage('configuration');
+  // }
+
+ if (getGroupIdFromUrl() && page === 'home') {
+  setPage('configuration');
   }
 
   if (utils.isMobileSession() || utils.isSmallScreen()) {

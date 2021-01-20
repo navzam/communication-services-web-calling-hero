@@ -5,6 +5,8 @@ import express, { RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
+import { ChatClient } from '@azure/communication-chat';
+import { AzureCommunicationUserCredential } from '@azure/communication-common';
 import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/storage-blob';
 import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
 
@@ -17,10 +19,24 @@ declare global {
     }
 }
 
+class CommunicationUserToken {
+    threadId: string;
+    moderatorId: string;
+    moderatorToken: string;
+
+    constructor(id: string, moderatorId: string, moderatorToken: string){
+        this.threadId = id;
+        this.moderatorId = moderatorId;
+        this.moderatorToken = moderatorToken;
+    }
+}
+
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
 const app = express();
 const PORT = 5000;
+
+var tokenStore: {[key: string]: CommunicationUserToken } = {};
 
 const [
     acsConnectionString,
@@ -61,7 +77,7 @@ app.get('/userToken', async (req, res) => {
     const identityClient = new CommunicationIdentityClient(acsConnectionString);
 
     const userResponse = await identityClient.createUser();
-    const tokenResponse = await identityClient.issueToken(userResponse, ["voip"]);
+    const tokenResponse = await identityClient.issueToken(userResponse, ["voip", "chat"]);
 
     return res.status(200).json({
         value: {
@@ -212,6 +228,81 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
 
     return res.sendStatus(204);
 });
+
+/* chat */
+// getEnvironmentUrl
+const getEnvironmentUrl = () : string => {
+    var connectionString = acsConnectionString.replace("endpoint=", "");
+
+    var environmentUrl = new URL(connectionString);
+    return environmentUrl.protocol + "//" + environmentUrl.host; 
+};
+
+app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
+    res.status(200).send(getEnvironmentUrl());
+ });
+
+ app.get('/isValidThread/:threadId', async (req, res) => {
+     if(req.params['threadId'] in tokenStore){
+        return res.sendStatus(200);
+     }
+     return res.sendStatus(404);
+ });
+
+ app.post('/createThread', async(req, res) => {
+    const userId = req.userId;
+    const identityClient = new CommunicationIdentityClient(acsConnectionString);
+    var endpointUrl = getEnvironmentUrl();
+    // create our user
+    const userResponse = await identityClient.createUser();
+    const tokenResponse = await identityClient.issueToken(userResponse, ["voip", "chat"]);
+
+    let chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(tokenResponse.token));
+    let createThreadRequest = {
+        topic: 'Chat topic',
+        members: [{
+                    user: { communicationUserId: tokenResponse.user.communicationUserId },
+                }]
+    };
+
+    let chatThreadClient= await chatClient.createChatThread(createThreadRequest);
+    let threadId = chatThreadClient.threadId;
+
+    tokenStore[threadId] = new CommunicationUserToken(threadId, userId, tokenResponse.token);
+
+    return res.status(200).send(threadId);
+
+ });
+
+ const generateNewModeratorAndThread = async () => {
+
+ };
+
+ app.post('/addUser/:threadId', fakeAuthMiddleware, async(req, res) => {
+
+    try{
+        const threadId = req.params['threadId'];
+        const userId = req.body['id'];
+        const displayName = req.body['displayName'];
+        const moderator = tokenStore[threadId];
+    
+        let addMembersRequest =
+        {
+        members: [
+            {
+                user: { communicationUserId: userId },
+                displayName: displayName
+            }]
+            };
+    
+        let chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(moderator.moderatorToken));
+        let chatThreadClient = await chatClient.getChatThreadClient(threadId);
+        await chatThreadClient.addMembers(addMembersRequest);
+        res.sendStatus(200);
+    }catch(error){
+        res.sendStatus(400);
+    }
+ });
 
 app.listen(PORT, () => {
     console.log(`[server]: Server is running at https://localhost:${PORT}`);

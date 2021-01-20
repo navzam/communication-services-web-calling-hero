@@ -9,6 +9,10 @@ import { State } from '../core/reducers';
 import { AudioDeviceInfo, VideoDeviceInfo, LocalVideoStream } from '@azure/communication-calling';
 import { setLocalVideoStream } from '../core/actions/streams';
 
+/* chat */
+import { addUserToThread, isValidThread } from '../core/sideEffects';
+import { setAddThreadMemberError } from '../core/actions/ThreadMembersAction';
+
 const mapStateToProps = (state: State, props: ConfigurationScreenProps) => ({
   deviceManager: state.devices.deviceManager,
   callAgent: state.calls.callAgent,
@@ -34,7 +38,15 @@ const mapDispatchToProps = (dispatch: any) => ({
     dispatch(initCallClient(userId, unsupportedStateHandler, endCallHandler)),
   setUserId: (userId: string) => dispatch(setUserId(userId)),
   setGroup: (groupId: string) => dispatch(setGroup(groupId)),
-  updateDevices: () => dispatch(updateDevices())
+  updateDevices: () => dispatch(updateDevices()),
+  /* chat */
+  setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string) => {
+    await dispatch(addUserToThread(displayName, emoji, userId));
+  },
+  isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
+  setAddThreadMemberError: async (addThreadMemberError: boolean | undefined) => {
+    dispatch(setAddThreadMemberError(addThreadMemberError));
+  }
 });
 
 const connector: any = connect(mapStateToProps, mapDispatchToProps);
