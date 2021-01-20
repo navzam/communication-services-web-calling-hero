@@ -74,7 +74,7 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
     if(users.length==0)
-        return res.sendStatus(403).send(null);
+        return res.sendStatus(403);
 
     const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
     files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
@@ -89,7 +89,7 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
     if(users.length==0)
-        return res.sendStatus(403).send(null);
+        return res.sendStatus(403);
 
     const fileId = req.params['fileId'];
 
@@ -125,7 +125,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
     if(users.length==0)
-        return res.sendStatus(403).send(null);
+        return res.sendStatus(403);
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
