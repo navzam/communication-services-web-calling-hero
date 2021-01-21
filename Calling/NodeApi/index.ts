@@ -272,10 +272,6 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
 
     let chatThreadClient= await chatClient.createChatThread(createThreadRequest);
     let threadId = chatThreadClient.threadId;
-
-    console.log("______moderator id 1: " + tokenResponse.user.communicationUserId);
-    console.log("______thread id 1: " + threadId);
-
     tokenStore[threadId] = new CommunicationUserToken(threadId, tokenResponse.user.communicationUserId, tokenResponse.token);
 
     return res.status(200).send(threadId);

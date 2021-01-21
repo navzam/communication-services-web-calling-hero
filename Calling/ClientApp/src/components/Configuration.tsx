@@ -58,7 +58,6 @@ export interface ConfigurationScreenProps {
   localVideoStream: LocalVideoStream;
   screenWidth: number;
   /* chat */
-  joinChatHandler(): void;
   setup(displayName: string, emoji: string, joinChatHandler: Function, userId: string): void;
   isValidThread(threadId: string | null): any;
   addThreadMemberError: boolean | undefined;
@@ -121,23 +120,24 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
       );
       props.setAddThreadMemberError(undefined);
       setIsJoining(false);
-    } else if (addThreadMemberError === false) {
-      // props.joinChatHandler();
-    }
+    } 
   }, [addThreadMemberError]);
 
+  // Validate chat thread
   useEffect(() => {
     const isValidThread = async () => {
-      if (await isValidThreadProp(getThreadId())) {
-        setIsValidThread(true);
-      } else {
-        setIsValidThread(false);
+      const threadId = getThreadId();
+      if(threadId){
+        if (await isValidThreadProp(threadId)) {
+          setIsValidThread(true);
+        } else {
+          setIsValidThread(false);
+        }
       }
     };
     isValidThread();
 
   }, [isValidThreadProp]);
-  /* end chat */
 
   useEffect(() => {
     setUserId(userId);

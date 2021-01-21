@@ -520,9 +520,6 @@ const addUserToThread =  (displayName: string, emoji: string, userId: string, go
   subscribeForReadReceipt(chatClient, chatThreadClient, dispatch, getState);
 
   dispatch(setThreadId(threadId));
-  console.log("____contoso user id: " + tokenResponse.value.user.id);
-  console.log("____contoso token: " + userToken);
-  console.log("____contoso displayname: " + displayName);
   dispatch(setContosoUser(tokenResponse.value.user.id, userToken, displayName));
   dispatch(setChatClient(chatClient));
 
