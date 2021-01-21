@@ -228,7 +228,7 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
 
     let chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(tokenResponse.token));
     let createThreadRequest = {
-        topic: 'Chat topic',
+        topic: 'Chat',
         members: [{
                     user: { communicationUserId: tokenResponse.user.communicationUserId },
                 }]
