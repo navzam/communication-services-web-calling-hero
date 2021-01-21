@@ -128,6 +128,7 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
     const isValidThread = async () => {
       const threadId = getThreadId();
       if(threadId){
+        setIsLoadingThread(false);
         if (await isValidThreadProp(threadId)) {
           setIsValidThread(true);
         } else {
@@ -161,7 +162,6 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
       clearInterval(listener);
     };
   }, [isValidThread]);
-
 
   const joinCallLoading = () => {
     return (
