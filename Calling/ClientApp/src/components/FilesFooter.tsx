@@ -14,14 +14,13 @@ const takePhotoString = 'Take photo';
 var fileSizeError=false;
 
 const attachFileClicked = () => {
-    console.log(`attach file clicked`);
     document.getElementById('file-input')?.click();
 };
 
 export default (props: FilesFooterProps): JSX.Element => {
     const [takingPhoto, setTakingPhoto] = useState(false);
     const fileInputChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files === null) {
+        if (event.target.files === null || event.target.files.length === 0) {
           return;
         }
     
