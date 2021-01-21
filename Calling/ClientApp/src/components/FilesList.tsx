@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { DocumentCard, DocumentCardActions, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Link, Modal, Spinner, Stack } from '@fluentui/react';
+import { DocumentCard, DocumentCardActions, DocumentCardImage, DocumentCardTitle, IButtonProps, IconButton, IIconProps, ImageFit, Modal, Spinner, Stack } from '@fluentui/react';
 import { filesListStyle, filesGridStyle } from './styles/FilesList.styles';
+import AutoDownloadLink from './AutoDownloadLink';
 
 export interface FilesListProps {
     files: Map<string, {
@@ -27,19 +28,24 @@ export default (props: FilesListProps): JSX.Element => {
         const hasImagePreview = isImage && file.blobUrl !== null;
         const nonImageIcon: IIconProps = { iconName: 'Document' };
         const imageIcon: IIconProps = { iconName: 'FileImage' };
-        const downloadButton: IButtonProps = {
-            iconProps: {
-                iconName: 'Download',
-            },
-            onClick: (e) => {
-                setDownloadClicked(new Map(downloadClicked.set(fileId, true)));
-                if (!props.files.get(fileId)?.blobUrl) {
-                    props.downloadFile(fileId);
-                }
-            },
-            ariaLabel: 'download file',
-            disabled: file.isDownloading || (downloadClicked.get(fileId) && file.blobUrl !== null),
-        };
+        const downloadButton: IButtonProps =
+            !file.isDownloading ? {
+                iconProps: {
+                    iconName: 'Download',
+                },
+                onClick: (e) => {
+                    setDownloadClicked(new Map(downloadClicked.set(fileId, true)));
+                    if (!props.files.get(fileId)?.blobUrl) {
+                        props.downloadFile(fileId);
+                    }
+                },
+                ariaLabel: 'download file',
+                disabled: file.isDownloading || (downloadClicked.get(fileId) && file.blobUrl !== null),
+            }
+            : {
+                children: <Spinner />,
+                disabled: true,
+            };
         const previewButton: IButtonProps = {
             iconProps: {
                 iconName: 'MiniExpand',
@@ -56,20 +62,14 @@ export default (props: FilesListProps): JSX.Element => {
                     imageSrc={hasImagePreview ? file.blobUrl! : undefined}
                     iconProps={hasImagePreview ? undefined : (isImage ? imageIcon : nonImageIcon)} />
                     <DocumentCardTitle title={file.filename} />
-                    { file.isDownloading && <Spinner /> }
-                    { downloadClicked.get(fileId) && file.blobUrl !== null && 
-                        <Link
-                            href={file.blobUrl}
-                            download={file.filename}
-                            onClick={() => {
-                                setDownloadClicked(new Map(downloadClicked.set(fileId, false)));
-                                if (!isImage) {
-                                    // TODO: should also revoke the object URL somewhere
-                                    props.clearFileBlobUrl(fileId);
-                                }
-                            }}>
-                            Click to download
-                        </Link>
+                    { downloadClicked.get(fileId) && file.blobUrl !== null &&
+                        <AutoDownloadLink link={file.blobUrl} downloadName={file.filename} onTriggered={() => {
+                            setDownloadClicked(new Map(downloadClicked.set(fileId, false)));
+                            if (!isImage) {
+                                // TODO: should also revoke the object URL somewhere
+                                props.clearFileBlobUrl(fileId);
+                            }
+                        }} />
                     }
                 <DocumentCardActions actions={isImage ? [downloadButton, previewButton] : [downloadButton]} />
             </DocumentCard>
