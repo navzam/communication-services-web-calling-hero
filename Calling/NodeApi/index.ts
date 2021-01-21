@@ -6,13 +6,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
 import { addFileMetadata, addUserDetails, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUserDetails, uploadFile } from './fileService';
-declare global {
-    namespace Express {
-        export interface Request {
-            userId: string;
-        }
-    }
-}
+
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
 const app = express();
@@ -34,8 +28,8 @@ const [
 });
 
 const blobContainerName = 'files';
-const tableName = 'fileMetadata';
-const userDetailTable='userDetails';
+const fileMetadataTableName = 'fileMetadata';
+const userDetailTableName = 'userDetails';
 
 // express middleware to validate Authorization header
 const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
@@ -72,11 +66,12 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
-    if(users.length==0)
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
+    if (users.length === 0) {
         return res.sendStatus(403);
+    }
 
-    const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
+    const files = await getFilesForGroup(groupId, storageConnectionString, fileMetadataTableName);
     files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
 
     return res.status(200).send(files);
@@ -87,15 +82,16 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
-    if(users.length==0)
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
+    if (users.length === 0) {
         return res.sendStatus(403);
+    }
 
     const fileId = req.params['fileId'];
 
     let file: FileMetadata;
     try {
-        file = await getFileMetadata(groupId, fileId, storageConnectionString, tableName);
+        file = await getFileMetadata(groupId, fileId, storageConnectionString, fileMetadataTableName);
     } catch (e) {
         if (e instanceof FileServiceError) {
             res.sendStatus(404);
@@ -123,9 +119,10 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
-    if(users.length==0)
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
+    if (users.length === 0) {
         return res.sendStatus(403);
+    }
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
@@ -159,7 +156,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
         name: body.fileName,
         uploadDateTime: new Date(),
     };
-    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, tableName);
+    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, fileMetadataTableName);
 
     console.log('Added file data to table');
 
@@ -173,7 +170,7 @@ app.post( '/groups/:groupId/user',fakeAuthMiddleware, async (req, res) => {
         return res.status(400).send("Invalid group ID");
     }
 
-    await addUserDetails(groupId, userId,storageConnectionString, userDetailTable);
+    await addUserDetails(groupId, userId,storageConnectionString, userDetailTableName);
     console.log('Added User details to table');
    
     return res.sendStatus(204);
