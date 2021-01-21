@@ -145,24 +145,25 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
     setGroup(groupId);
   }, [userId, groupId, setUserId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler]);
 
+  useEffect(() => {
+    let listener: NodeJS.Timeout = setInterval(async () => {
+      const threadId = getThreadIdFromUrl();
+      if(threadId && !isValidThread){
+        setIsLoadingThread(false);
+        if (await isValidThreadProp(threadId)) {
+          setIsValidThread(true);
+        } else {
+          setIsValidThread(false);
+        }
+       }
+    }, 500);
+    return () => {
+      clearInterval(listener);
+    };
+  }, [isValidThread]);
+
 
   const joinCallLoading = () => {
-   var timer = window.setInterval(async () => {
-     clearInterval(timer);
-     const threadId = getThreadIdFromUrl();
-     if(threadId){
-      setIsLoadingThread(false);
-      if (await isValidThreadProp(threadId)) {
-        setIsValidThread(true);
-      } else {
-        setIsValidThread(false);
-      }
-     }
-    else{
-        console.log("Thread does not exist");
-      }
-    }, 1000);
-
     return (
       <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
     );
