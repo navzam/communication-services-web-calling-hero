@@ -1,5 +1,5 @@
 import { TableClient, TableEntity } from "@azure/data-tables";
-import { BlobServiceClient, RestError } from "@azure/storage-blob";
+import { BlobServiceClient, ContainerClient, RestError } from "@azure/storage-blob";
 
 export type FileServiceErrorType = 'FileNotFound' | 'FileTooLarge';
 
@@ -36,6 +36,8 @@ interface UserDetails{
 // Uses Table Storage
 export async function getFilesForGroup(groupId: string, storageConnectionString: string, tableName: string): Promise<FileMetadata[]> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+
     const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>({
         queryOptions: {
             filter: `PartitionKey eq '${groupId}'`,
@@ -57,6 +59,7 @@ export async function getFilesForGroup(groupId: string, storageConnectionString:
 // Uses Table Storage
 export async function getFileMetadata(groupId: string, fileId: string, storageConnectionString: string, tableName: string): Promise<FileMetadata> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
 
     try {
         const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(groupId, fileId);
@@ -78,14 +81,7 @@ export async function getFileMetadata(groupId: string, fileId: string, storageCo
 // Uses Table Storage
 export async function addFileMetadata(groupId: string, fileMetadata: FileMetadata, storageConnectionString: string, tableName: string): Promise<void> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
-    try {
-        await tableClient.create();
-    } catch (e) {
-        if (e instanceof RestError && e.statusCode === 409) {
-        } else {
-            throw e;
-        }
-    }
+    await ensureTableCreated(tableClient);
 
     const entity: TableEntity<TableStorageFileMetadata> = {
         partitionKey: groupId,
@@ -104,7 +100,8 @@ export async function addFileMetadata(groupId: string, fileMetadata: FileMetadat
 export async function downloadFile(fileId: string, storageConnectionString: string, blobContainerName: string): Promise<NodeJS.ReadableStream> {
     const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
     const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    // await containerClient.createIfNotExists();
+    await ensureBlobContainerCreated(containerClient);
+
     const blobClient = containerClient.getBlockBlobClient(fileId);
 
     const blobDownloadResponse = await blobClient.download();
@@ -120,7 +117,8 @@ export async function downloadFile(fileId: string, storageConnectionString: stri
 export async function uploadFile(fileId: string, fileBuffer: Buffer, storageConnectionString: string, blobContainerName: string): Promise<void> {
     const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
     const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    await containerClient.createIfNotExists();
+    await ensureBlobContainerCreated(containerClient);
+
     const blobClient = containerClient.getBlockBlobClient(fileId);
     
     let blobUploadResponse = await blobClient.uploadData(fileBuffer);
@@ -130,14 +128,7 @@ export async function uploadFile(fileId: string, fileBuffer: Buffer, storageConn
 // Uses Table Storage
 export async function addUserDetails(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<void> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
-    try {
-        await tableClient.create();
-    } catch (e) {
-        if (e instanceof RestError && e.statusCode === 409) {
-        } else {
-            throw e;
-        }
-    }
+    await ensureTableCreated(tableClient);
 
     const entity: TableEntity<UserDetails> = {
         partitionKey: groupId,
@@ -155,6 +146,8 @@ export async function addUserDetails(groupId: string, userId: string, storageCon
 // Uses Table Storage
 export async function getUserDetails(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<UserDetails[]> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+    
     const entitiesIter = tableClient.listEntities<UserDetails>({
         queryOptions: {
             filter: `PartitionKey eq '${groupId}' `
@@ -170,4 +163,20 @@ export async function getUserDetails(groupId: string, userId: string, storageCon
         });
     }
     return users;
+}
+
+async function ensureTableCreated(tableClient: TableClient): Promise<void> {
+    try {
+        await tableClient.create();
+    } catch (e) {
+        if (e instanceof RestError && e.statusCode === 409) {
+            return;
+        }
+
+        throw e;
+    }
+}
+
+async function ensureBlobContainerCreated(containerClient: ContainerClient): Promise<void> {
+    await containerClient.createIfNotExists();
 }
