@@ -27,11 +27,6 @@ import {
 import { MAXIMUM_LENGTH_OF_NAME } from '../constants';
 import {
   CAT,
-  // MOUSE,
-  // KOALA,
-  // OCTOPUS,
-  // MONKEY,
-  // FOX,
   getThreadId
 } from '../Utils/Utils';
 

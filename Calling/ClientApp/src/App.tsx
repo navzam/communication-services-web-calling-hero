@@ -108,10 +108,6 @@ const App = () => {
     }
   };
 
-  // if (getGroupIdFromUrl() && getThreadIdFromUrl() && page === 'home') {
-  //   setPage('configuration');
-  // }
-
  if (getGroupIdFromUrl() && page === 'home') {
   setPage('configuration');
   }
