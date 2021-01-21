@@ -1,6 +1,6 @@
 import { IconButton, Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
 import { CameraIcon, PaperclipIcon } from "@fluentui/react-northstar";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import PhotoCapture from "./PhotoCapture";
 import { attachButtonStyle, attachIconStyle, paneFooterStyles, paneFooterTokens } from "./styles/CommandPanel.styles";
 
@@ -13,12 +13,10 @@ const attachFileString = 'Attach file';
 const takePhotoString = 'Take photo';
 var fileSizeError=false;
 
-const attachFileClicked = () => {
-    document.getElementById('file-input')?.click();
-};
-
 export default (props: FilesFooterProps): JSX.Element => {
+    const hiddenFileInputRef = useRef<HTMLInputElement>(null);
     const [takingPhoto, setTakingPhoto] = useState(false);
+
     const fileInputChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files === null || event.target.files.length === 0) {
           return;
@@ -32,6 +30,10 @@ export default (props: FilesFooterProps): JSX.Element => {
         }
         if(!fileSizeError)
             props.onFileChosen(file);
+    };
+
+    const attachFileClicked = () => {
+        hiddenFileInputRef.current?.click();
     };
 
     const takePhotoClicked = () => {
@@ -70,6 +72,6 @@ export default (props: FilesFooterProps): JSX.Element => {
             <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setTakingPhoto(false)} />
             {takingPhoto && <PhotoCapture onPhotoCaptured={onPhotoCaptured} />}
         </Modal>
-        <input id="file-input" type="file" name="name" onChange={fileInputChanged} style={{ display: 'none' }} />
+        <input ref={hiddenFileInputRef} type="file" name="name" onChange={fileInputChanged} style={{ display: 'none' }} />
     </Stack>;
 }
