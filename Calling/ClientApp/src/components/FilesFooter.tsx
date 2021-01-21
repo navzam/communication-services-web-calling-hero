@@ -1,4 +1,4 @@
-import { IconButton, Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
+import { IconButton, MessageBar, MessageBarType, Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
 import { CameraIcon, PaperclipIcon } from "@fluentui/react-northstar";
 import React, { useRef, useState } from "react";
 import PhotoCapture from "./PhotoCapture";
@@ -11,25 +11,24 @@ export interface FilesFooterProps {
 
 const attachFileString = 'Attach file';
 const takePhotoString = 'Take photo';
-var fileSizeError=false;
 
 export default (props: FilesFooterProps): JSX.Element => {
     const hiddenFileInputRef = useRef<HTMLInputElement>(null);
     const [takingPhoto, setTakingPhoto] = useState(false);
+    const [fileError, setFileError] = useState<string | null>(null);
 
     const fileInputChanged = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files === null || event.target.files.length === 0) {
           return;
         }
-    
-        fileSizeError=false;
+
         const file = event.target.files[0];
-        var sizeInMB = (file.size / (1024*1024)).toFixed(2);
-        if(parseInt(sizeInMB)>5){
-            fileSizeError=true; 
-        }
-        if(!fileSizeError)
+        if (file.size > 5 * 1024 * 1024) {
+            setFileError('The selected file exceeds the size limit of 5 MB');
+        } else {
+            setFileError(null);
             props.onFileChosen(file);
+        }
     };
 
     const attachFileClicked = () => {
@@ -47,19 +46,11 @@ export default (props: FilesFooterProps): JSX.Element => {
 
     return <Stack styles={paneFooterStyles} tokens={paneFooterTokens}>
         <Separator />
-        {fileSizeError === true ?
-            <div id="failMessage" className="overlay">
-                <div className="popup" >
-                    <h2>File upload failed</h2>
-                    <a className="close" href='#failMessage'>×</a>
-
-                    <div className="content">
-                        Please upload file with size less than 5 MB
-                    </div>
-                </div>
-            </div>
-            : null
-        }
+        {fileError && (
+            <MessageBar messageBarType={MessageBarType.error} onDismiss={() => setFileError(null)}>
+                {fileError}
+            </MessageBar>
+        )}
         <PrimaryButton className={attachButtonStyle} onClick={attachFileClicked}>
             <PaperclipIcon className={attachIconStyle} />
             {attachFileString}
