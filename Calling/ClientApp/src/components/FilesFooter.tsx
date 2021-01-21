@@ -1,4 +1,4 @@
-import { Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
+import { IconButton, Modal, PrimaryButton, Separator, Stack } from "@fluentui/react";
 import { CameraIcon, PaperclipIcon } from "@fluentui/react-northstar";
 import React, { useState } from "react";
 import PhotoCapture from "./PhotoCapture";
@@ -11,6 +11,7 @@ export interface FilesFooterProps {
 
 const attachFileString = 'Attach file';
 const takePhotoString = 'Take photo';
+var fileSizeError=false;
 
 const attachFileClicked = () => {
     console.log(`attach file clicked`);
@@ -24,8 +25,14 @@ export default (props: FilesFooterProps): JSX.Element => {
           return;
         }
     
+        fileSizeError=false;
         const file = event.target.files[0];
-        props.onFileChosen(file);
+        var sizeInMB = (file.size / (1024*1024)).toFixed(2);
+        if(parseInt(sizeInMB)>5){
+            fileSizeError=true; 
+        }
+        if(!fileSizeError)
+            props.onFileChosen(file);
     };
 
     const takePhotoClicked = () => {
@@ -39,6 +46,19 @@ export default (props: FilesFooterProps): JSX.Element => {
 
     return <Stack styles={paneFooterStyles} tokens={paneFooterTokens}>
         <Separator />
+        {fileSizeError === true ?
+            <div id="failMessage" className="overlay">
+                <div className="popup" >
+                    <h2>File upload failed</h2>
+                    <a className="close" href='#failMessage'>×</a>
+
+                    <div className="content">
+                        Please upload file with size less than 5 MB
+                    </div>
+                </div>
+            </div>
+            : null
+        }
         <PrimaryButton className={attachButtonStyle} onClick={attachFileClicked}>
             <PaperclipIcon className={attachIconStyle} />
             {attachFileString}
@@ -48,6 +68,7 @@ export default (props: FilesFooterProps): JSX.Element => {
             {takePhotoString}
         </PrimaryButton>
         <Modal isOpen={takingPhoto}>
+            <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setTakingPhoto(false)} />
             {takingPhoto && <PhotoCapture onPhotoCaptured={onPhotoCaptured} />}
         </Modal>
         <input id="file-input" type="file" name="name" onChange={fileInputChanged} style={{ display: 'none' }} />

@@ -1,5 +1,6 @@
 const SET_FILES = 'SET_FILES';
-const SET_FILE_IMAGE_URL = 'SET_FILE_IMAGE_URL';
+const SET_FILE_BLOB_URL = 'SET_FILE_BLOB_URL';
+const SET_FILE_IS_DOWNLOADING = 'SET_FILE_IS_DOWNLOADING';
 
 interface SetFilesActionFile {
     id: string;
@@ -11,10 +12,16 @@ interface SetFilesAction {
     files: SetFilesActionFile[];
 }
 
-interface SetFileImageUrlAction {
-    type: typeof SET_FILE_IMAGE_URL;
+interface SetFileBlobUrlAction {
+    type: typeof SET_FILE_BLOB_URL;
     fileId: string;
-    imageUrl: string | null;
+    blobUrl: string | null;
+}
+
+interface SetFileIsDownloadingAction {
+    type: typeof SET_FILE_IS_DOWNLOADING;
+    fileId: string;
+    isDownloading: boolean;
 }
 
 export const setFiles = (files: SetFilesActionFile[]): SetFilesAction => {
@@ -24,16 +31,25 @@ export const setFiles = (files: SetFilesActionFile[]): SetFilesAction => {
     };
 };
 
-export const setFileImageUrl = (fileId: string, imageUrl: string | null): SetFileImageUrlAction => {
+export const setFileBlobUrl = (fileId: string, blobUrl: string | null): SetFileBlobUrlAction => {
     return {
-        type: SET_FILE_IMAGE_URL,
+        type: SET_FILE_BLOB_URL,
         fileId,
-        imageUrl
+        blobUrl
     };
 };
 
-export { SET_FILES, SET_FILE_IMAGE_URL };
+export const setFileIsDownloading = (fileId: string, isDownloading: boolean): SetFileIsDownloadingAction => {
+    return {
+        type: SET_FILE_IS_DOWNLOADING,
+        fileId,
+        isDownloading
+    };
+};
+
+export { SET_FILES, SET_FILE_BLOB_URL, SET_FILE_IS_DOWNLOADING };
 
 export type FileTypes =
     | SetFilesAction
-    | SetFileImageUrlAction;
+    | SetFileBlobUrlAction
+    | SetFileIsDownloadingAction;

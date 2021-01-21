@@ -29,7 +29,7 @@ import {
   setDeviceManager
 } from './actions/devices';
 import { addScreenShareStream, resetStreams, removeScreenShareStream } from './actions/streams';
-import { setFileImageUrl, setFiles } from './actions/files';
+import { setFileBlobUrl, setFileIsDownloading, setFiles } from './actions/files';
 import { State } from './reducers';
 
 /* chat */
@@ -176,6 +176,7 @@ export const initCallClient = (userId: string, unsupportedStateHandler: () => vo
       }
 
       callAgent.updateDisplayName(userId);
+      blobAuthorization( dispatch, getState);
 
       let deviceManager: DeviceManager = await callClient.getDeviceManager();
 
@@ -313,6 +314,38 @@ const updateAudioDevices = async (deviceManager: DeviceManager, dispatch: Dispat
   }
 };
 
+export const blobAuthorization = async(
+  dispatch: Dispatch, getState: () => State
+) => {
+   
+  const state = getState();
+  const userId = state.sdk.userId;
+  const groupId=state.calls.group;
+  
+  if (groupId === undefined) {
+    console.log(`Failed to make  API call because groupId is undefined`);
+    return;
+  }
+      if (userId === undefined) {
+      console.log(`Failed to make API call because userId is undefined`);
+      return;
+    }
+      let sendUserDetailsOptions = {
+      method: 'POST',
+      headers: {
+        'Authorization': userId
+      }
+    };
+    
+   try {
+      let sendUserDetailsResponse = await fetch(`/groups/${state.calls.group}/user`, sendUserDetailsOptions);
+      return sendUserDetailsResponse.ok;
+    } catch (error) {
+      console.error('Failed at sending UserDetails, Error: ', error);
+      return false;
+    }
+ };
+
 const updateVideoDevices = async (deviceManager: DeviceManager, dispatch: Dispatch, getState: () => State) => {
   const cameraList: VideoDeviceInfo[] = deviceManager.getCameraList();
   dispatch(setVideoDeviceList(cameraList));
@@ -386,7 +419,7 @@ export const getFiles = async (dispatch: Dispatch, getState: () => State) => {
   const currentFiles = state.files.files;
   for (const imageFile of imageFiles) {
     // Skip this image file if we already have an image URL for it
-    if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.imageUrl !== null) continue;
+    if (currentFiles.has(imageFile.id) && currentFiles.get(imageFile.id)!.blobUrl !== null) continue;
     // TODO: should this be dispatched?
     (dispatch as any)(getFile(imageFile.id));
     // getFile(imageFile.id)(dispatch, getState);
@@ -402,75 +435,68 @@ export const getFile = (fileId: string) => {
       return;
     }
 
+    dispatch(setFileIsDownloading(fileId, true));
+
     const response = await fetch(`/groups/${state.calls.group}/files/${fileId}`, { headers: { 'Authorization': userId } });
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
-    // Update files with new image URLs
-    dispatch(setFileImageUrl(fileId, objectUrl));
+
+    // Update file with new blob URL
+    dispatch(setFileBlobUrl(fileId, objectUrl));
+    dispatch(setFileIsDownloading(fileId, false));
   };
 };
 
-export const sendFile = (file: File) => {
+export const uploadSelectedFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
     if (userId === undefined) {
-      console.error(`Failed to make getFiles() API call because userId is undefined`);
-      return;
-    }
-
-    const data = new FormData();
-    data.append('file', file);
-    data.append('fileName', file.name);
-    data.append('groupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data,
-      headers: {
-        'Authorization': userId
-      }
-    };
-
-    try {
-      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
-      return sendFileResponse.ok;
-    } catch (error) {
-      console.error('Failed at sending file, Error: ', error);
+      console.error(`Failed to make sendFile() API call because userId is undefined`);
       return false;
     }
+
+    return await uploadFile(userId, state.calls.group, file, file.name);
   }
 };
 
-export const sendImage = (dataUrl: string) => {
+export const uploadCapturedImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
-    const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
-
     const state = getState();
     const userId = state.sdk.userId;
     if (userId === undefined) {
-      console.error(`Failed to make getFiles() API call because userId is undefined`);
-      return;
-    }
-    
-    const data = new FormData();
-    data.append('image', base64String);
-    data.append('fileName', 'user_photo.png');
-    data.append('groupId', state.calls.group);
-    let sendFileRequestOptions = {
-      method: 'POST',
-      body: data,
-      headers: {
-        'Authorization': userId
-      }
-    };
-
-    try {
-      let sendFileResponse = await fetch(`/groups/${state.calls.group}/files`, sendFileRequestOptions);
-      return sendFileResponse.ok;
-    } catch (error) {
-      console.error('Failed at sending image, Error: ', error);
+      console.error(`Failed to make sendImage() API call because userId is undefined`);
       return false;
     }
+
+    const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
+    return await uploadFile(userId, state.calls.group, base64String, 'user_photo.png');
+  }
+};
+
+const uploadFile = async (userId: string, groupId: string, media: string | File, fileName: string) => {
+  const data = new FormData();
+  if (media instanceof File) {
+    data.append('file', media);
+  } else {
+    data.append('image', media);
+  }
+  data.append('fileName', fileName);
+  data.append('groupId', groupId);
+  let sendFileRequestOptions = {
+    method: 'POST',
+    body: data,
+    headers: {
+      'Authorization': userId
+    }
+  };
+
+  try {
+    let sendFileResponse = await fetch(`/groups/${groupId}/files`, sendFileRequestOptions);
+    return sendFileResponse.ok;
+  } catch (error) {
+    console.error('Failed at sending image, Error: ', error);
+    return false;
   }
 };
 

@@ -11,6 +11,7 @@ import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/s
 import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
 
 // TODO: move to declaration file
+import { addFileMetadata, addUserDetails, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUserDetails, uploadFile } from './fileService';
 declare global {
     namespace Express {
         export interface Request {
@@ -42,13 +43,9 @@ var tokenStore: {[key: string]: CommunicationUserToken } = {};
 const [
     acsConnectionString,
     storageConnectionString,
-    storageAccountName,
-    storageAccountKey
 ] = [
     'ACS_CONNECTION_STRING',
     'STORAGE_CONNECTION_STRING',
-    'STORAGE_ACCOUNT_NAME',
-    'STORAGE_ACCOUNT_KEY'
 ].map(envKey => {
     const envValue = process.env[envKey];
     if (envValue === undefined) {
@@ -60,6 +57,7 @@ const [
 
 const blobContainerName = 'files';
 const tableName = 'fileMetadata';
+const userDetailTable='userDetails';
 
 // express middleware to validate Authorization header
 const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
@@ -96,23 +94,12 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403);
 
-    // Get file info from Table Storage
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-    const entitiesIter = tableClient.listEntities<TableStorageFileMetadata>({
-        queryOptions: {
-            filter: `PartitionKey eq '${groupId}'`,
-        },
-    });
-    const files = [];
-    for await (const entity of entitiesIter) {
-        files.push({
-            id: entity.FileId,
-            name: entity.FileName,
-            uploadDateTime: entity.UploadDateTime,
-        });
-    }
+    const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
+    files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
 
     return res.status(200).send(files);
 });
@@ -122,20 +109,17 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403);
 
     const fileId = req.params['fileId'];
 
-    // Prepare Table Storage clients
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-
-    // Get file info from Table Storage
-    let fileName: string;
+    let file: FileMetadata;
     try {
-        const entityResponse = await tableClient.getEntity<TableStorageFileMetadata>(groupId, fileId);
-        fileName = entityResponse.FileName;
+        file = await getFileMetadata(groupId, fileId, storageConnectionString, tableName);
     } catch (e) {
-        if (e instanceof RestError && e.statusCode === 404) {
+        if (e instanceof FileServiceError) {
             res.sendStatus(404);
             return;
         }
@@ -143,18 +127,12 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
         throw e;
     }
 
-    // Prepare Blob Storage clients and container
-    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
-    const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    // await containerClient.createIfNotExists();
-    const blobClient = containerClient.getBlockBlobClient(fileId);
+    const fileStream = await downloadFile(fileId, storageConnectionString, blobContainerName);
 
-    const blobStream = await blobClient.download();
-
-    res.attachment(fileName);
+    res.attachment(file.name);
     res.contentType('application/octet-stream');
     res.status(200);
-    blobStream.readableStreamBody?.pipe(res);
+    fileStream.pipe(res);
 });
 
 interface SendFileRequestBody {
@@ -178,10 +156,13 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    if(users.length==0)
+        return res.sendStatus(403);
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
-        return res.status(400).send("Invalid file");
+        return res.status(400).send("Invalid file/image");
     }
 
     if (body?.fileName === undefined) {
@@ -192,44 +173,27 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
         return res.status(400).send("Invalid group ID");
     }
 
-    // Prepare Blob Storage clients and container
-    const blobName: string = uuidv4();
-    const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
-    const containerClient = blobServiceClient.getContainerClient(blobContainerName);
-    await containerClient.createIfNotExists();
-    const blobClient = containerClient.getBlockBlobClient(blobName);
-    
-    let uploadResponse: BlobUploadCommonResponse;
+    // Upload file to Blob Storage
+    const newFileId: string = uuidv4();
     if (req.file !== undefined) {
         console.log(`Got file length: ${req.file.size}`);
-        uploadResponse = await blobClient.uploadData(req.file.buffer);
+        await uploadFile(newFileId, req.file.buffer, storageConnectionString, blobContainerName);
     } else {
         console.log(`Got image length: ${body.image?.length}`);
-        const buffer = Buffer.from(body.image!, "base64");
-        uploadResponse = await blobClient.uploadData(buffer);
+        const buffer = Buffer.from(body.image!, 'base64');
+        await uploadFile(newFileId, buffer, storageConnectionString, blobContainerName);
     }
 
-    console.log(`Uploaded blob: ${blobName}`);
+    console.log(`Uploaded blob: ${newFileId}`);
 
-    // Store file info in Table Storage
-    const tableStorageCredential = new TablesSharedKeyCredential(storageAccountName, storageAccountKey);
-    const tableClient = new TableClient(`https://${storageAccountName}.table.core.windows.net`, tableName, tableStorageCredential);
-    try {
-        await tableClient.create();
-    } catch (e) {
-        if (e instanceof RestError && e.statusCode === 409) {
-        } else {
-            throw e;
-        }
-    }
-    const entity: TableEntity<TableStorageFileMetadata> = {
-        partitionKey: groupId,
-        rowKey: blobName,
-        FileId: blobName,
-        FileName: body.fileName,
-        UploadDateTime: new Date(),
+    // Add file metadata to Table Storage
+    const newFileMetadata: FileMetadata = {
+        id: newFileId,
+        name: body.fileName,
+        uploadDateTime: new Date(),
     };
-    tableClient.createEntity(entity);
+    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, tableName);
+
     console.log('Added file data to table');
 
     return res.sendStatus(204);
@@ -304,6 +268,18 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
         res.sendStatus(400);
     }
  });
+app.post( '/groups/:groupId/user',fakeAuthMiddleware, async (req, res) => {
+    const groupId = req.params['groupId'];
+    const userId = req.userId;
+    if (groupId === undefined) {
+        return res.status(400).send("Invalid group ID");
+    }
+
+    await addUserDetails(groupId, userId,storageConnectionString, userDetailTable);
+    console.log('Added User details to table');
+   
+    return res.sendStatus(204);
+});
 
 app.listen(PORT, () => {
     console.log(`[server]: Server is running at https://localhost:${PORT}`);

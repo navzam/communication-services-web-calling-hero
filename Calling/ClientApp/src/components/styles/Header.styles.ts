@@ -13,7 +13,7 @@ export const pivotItemStyles: Partial<IPivotStyles> = {
     }
   },
   link: { padding: 0, marginRight: 0, height: '3.75rem' },
-  root: { width: '5.25rem', height: '3.75rem', display: 'inline-block', verticalAlign: 'top' }
+  root: { width: '7.75rem', height: '3.75rem', display: 'inline-block', verticalAlign: 'top' }
 };
 export const pivotContainerStyle = mergeStyles({
   display: 'inline-block'
