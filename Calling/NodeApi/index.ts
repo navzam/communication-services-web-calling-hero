@@ -244,10 +244,6 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
     return res.status(200).send(threadId);
  });
 
- const generateNewModeratorAndThread = async () => {
-
- };
-
  app.post('/addUser/:threadId', fakeAuthMiddleware, async(req, res) => {
     try{
         const threadId = req.params['threadId'];
