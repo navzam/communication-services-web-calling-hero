@@ -29,6 +29,9 @@ export default (props: FilesFooterProps): JSX.Element => {
             setFileError(null);
             props.onFileChosen(file);
         }
+
+        // Reset the file input so that choosing the same file again still triggers the onChange handler
+        event.target.value = "";
     };
 
     const attachFileClicked = () => {
