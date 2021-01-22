@@ -15,7 +15,7 @@ import { LiveAnnouncer, LiveMessage } from 'react-aria-live';
 import { URL_REGEX, NUMBER_OF_MESSAGES_TO_LOAD } from '../constants';
 import {
   chatContainerStyle,
-  messageAvatarContainerStyle,
+  // messageAvatarContainerStyle,
   noReadReceiptStyle,
   chatStyle,
   chatMessageStyle,
@@ -336,24 +336,6 @@ export default (props: ChatThreadProps): JSX.Element => {
                   </div>
                 );
                 return {
-                  gutter: message.mine ? (
-                    ''
-                  ) : (
-                    <div
-                      className={messageAvatarContainerStyle(
-                        props.users[message.sender.communicationUserId] ===
-                          undefined
-                          ? ''
-                          : props.users[message.sender.communicationUserId]
-                              .emoji
-                      )}
-                    >
-                      {props.users[message.sender.communicationUserId] ===
-                      undefined
-                        ? ''
-                        : props.users[message.sender.communicationUserId].emoji}
-                    </div>
-                  ),
                   key: index,
                   contentPosition: message.mine ? 'end' : 'start',
                   message: (
