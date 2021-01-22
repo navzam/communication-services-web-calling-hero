@@ -62,7 +62,7 @@ const userDetailTableName = 'userDetails';
 // express middleware to validate Authorization header
 const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
     const authValue = req.header('Authorization');
-    if (!authValue || !authValue.startsWith('user')) {
+    if (!authValue) {
         res.sendStatus(403);
         return;
     }

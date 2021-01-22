@@ -15,7 +15,6 @@ import { LiveAnnouncer, LiveMessage } from 'react-aria-live';
 import { URL_REGEX, NUMBER_OF_MESSAGES_TO_LOAD } from '../constants';
 import {
   chatContainerStyle,
-  // messageAvatarContainerStyle,
   noReadReceiptStyle,
   chatStyle,
   chatMessageStyle,
