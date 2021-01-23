@@ -1,16 +1,16 @@
 // © Microsoft Corporation. All rights reserved.
 import React, { useState, useEffect } from 'react';
-import GroupCall from './containers/GroupCall';
 import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import { reducer } from './core/reducers';
 import thunk from 'redux-thunk';
 import EndCall from './components/EndCall';
-import HomeScreen from './components/HomeScreen';
+import HomeScreen from './containers/HomeScreen';
 import ConfigurationScreen from './containers/Configuration';
 import { v1 as createGUID } from 'uuid';
 import { loadTheme, initializeIcons } from '@fluentui/react';
 import { utils } from './Utils/Utils';
+import CallScreen from './components/CallScreen';
 
 const sdkVersion = require('../package.json').dependencies['@azure/communication-calling'];
 const lastUpdated = `Last Updated ${utils.getBuildTime()} with @azure/communication-calling:${sdkVersion}`;
@@ -72,11 +72,15 @@ const App = () => {
       );
     } else if (page === 'call') {
       return (
-        <GroupCall
+        <CallScreen
           endCallHandler={() => setPage('endCall')}
           groupId={getGroupId()}
           userId={createUserId()}
           screenWidth={screenWidth}
+          endChatHandler={() => {
+              setPage('end');
+            }}
+          errorHandler={() => {setPage('error');}}
         />
       );
     } else if (page === 'endCall') {
@@ -104,8 +108,8 @@ const App = () => {
     }
   };
 
-  if (getGroupIdFromUrl() && page === 'home') {
-    setPage('configuration');
+ if (getGroupIdFromUrl() && page === 'home') {
+  setPage('configuration');
   }
 
   if (utils.isMobileSession() || utils.isSmallScreen()) {
