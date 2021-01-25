@@ -54,8 +54,8 @@ const [
 });
 
 const blobContainerName = 'files';
-const tableName = 'fileMetadata';
-const userDetailTable='userDetails';
+const fileMetadataTableName = 'fileMetadata';
+const userDetailTableName='userDetails';
 
 // express middleware to validate Authorization header
 const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
@@ -66,7 +66,6 @@ const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
     }
 
     req.userId = authValue;
-
     next();
 };
 
@@ -92,11 +91,11 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
     if (users.length === 0)
         return res.sendStatus(403);
 
-    const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
+    const files = await getFilesForGroup(groupId, storageConnectionString, fileMetadataTableName);
     files.sort((a, b) => new Date(b.uploadDateTime).getTime() - new Date(a.uploadDateTime).getTime());
 
     return res.status(200).send(files);
@@ -107,7 +106,7 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
     const userId = req.userId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
     if (users.length === 0)
         return res.sendStatus(403);
 
@@ -115,7 +114,7 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
 
     let file: FileMetadata;
     try {
-        file = await getFileMetadata(groupId, fileId, storageConnectionString, tableName);
+        file = await getFileMetadata(groupId, fileId, storageConnectionString, fileMetadataTableName);
     } catch (e) {
         if (e instanceof FileServiceError) {
             res.sendStatus(404);
@@ -155,7 +154,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     const threadId = req.body.threadId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
-    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
+    const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTableName);
     if(users.length === 0)
         return res.sendStatus(403);
 
@@ -195,7 +194,7 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
         name: body.fileName,
         uploadDateTime: new Date(),
     };
-    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, tableName);
+    await addFileMetadata(groupId, newFileMetadata, storageConnectionString, fileMetadataTableName);
 
     console.log('Added file data to table');
 
@@ -244,8 +243,8 @@ app.get('/isValidThread/:threadId', async (req, res) => {
     let createThreadRequest = {
         topic: 'Chat',
         members: [{
-                    user: { communicationUserId: tokenResponse.user.communicationUserId },
-                }]
+            user: { communicationUserId: tokenResponse.user.communicationUserId },
+        }]
     };
 
     let chatThreadClient = await chatClient.createChatThread(createThreadRequest);
@@ -254,10 +253,6 @@ app.get('/isValidThread/:threadId', async (req, res) => {
 
     return res.status(200).send(threadId);
  });
-
- const generateNewModeratorAndThread = async () => {
-
- };
 
  app.post('/addUser/:threadId', fakeAuthMiddleware, async(req, res) => {
     try{
@@ -290,7 +285,7 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
         return res.status(400).send("Invalid group ID");
     }
 
-    await addUserDetails(groupId, userId,storageConnectionString, userDetailTable);
+    await addUserDetails(groupId, userId,storageConnectionString, userDetailTableName);
     console.log('Added User details to table');
 
     return res.sendStatus(204);
