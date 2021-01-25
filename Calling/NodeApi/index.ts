@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import express, { RequestHandler } from 'express';
+import express, { json, RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
@@ -202,13 +202,17 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     console.log('Added file data to table');
 
     const userCredential = tokenStore[threadId];
-
-
     const chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(userCredential.moderatorToken));
     const chatThreadClient = await chatClient.getChatThreadClient(userCredential.threadId);
 
-    await chatThreadClient.sendMessage({content: "hello there's a new file "+newFileId});
-    
+    // "Event" to identify to chat renderer that this message should be parsed before rendering messages.
+    const addedFileMessage = {
+        event: "FileUpload",
+        fileName: body.fileName,
+        fileId: newFileId
+    };
+
+    await chatThreadClient.sendMessage({content: JSON.stringify(addedFileMessage)});
     return res.sendStatus(204);
 });
 
