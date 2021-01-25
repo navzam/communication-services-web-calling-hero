@@ -5,7 +5,7 @@ const chatHeaderContainerStyle = mergeStyles({
   height: 'auto',
   paddingLeft: '3.25rem',
   paddingRight: '3.25rem',
-  marginTop: '1.1rem',
+  marginTop: '2rem',
   selectors: {
     '@media (max-width: 65rem)': {
       paddingLeft: '5%',
@@ -30,31 +30,8 @@ const topicNameLabelStyle = mergeStyles({
   marginRight: '0.125rem',
   width: '31.25rem',
   wordBreak: 'break-all',
-  overflowY: 'hidden'
-});
-
-const topicNameEditTextStyle1 = mergeStyles({
-  color: '#A19F9D',
-  fontSize: '1rem', // 16px
-  fontWeight: 600,
-  width: '100%',
-  height: '100%'
-});
-
-const leaveButtonContainerStyle = mergeStyles({
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center'
-});
-
-const leaveButtonStyle = mergeStyles({
-  marginRight: '0.625rem',
-  width: '6.688rem',
-  borderWidth: '0.125rem',
-  borderColor: '#CCCCCC',
-  color: '#323130',
-  fontSize: '0.875rem', // 14px
-  fontWeight: 600
+  overflowY: 'hidden',
+  paddingBottom: '0.5rem'
 });
 
 const greyIconButtonStyle = mergeStyles({
@@ -117,9 +94,6 @@ export {
   chatHeaderContainerStyle,
   topicNameContainerStyle,
   topicNameLabelStyle,
-  topicNameEditTextStyle1,
-  leaveButtonContainerStyle,
-  leaveButtonStyle,
   greyIconButtonStyle,
   editIcon,
   leaveIcon,
