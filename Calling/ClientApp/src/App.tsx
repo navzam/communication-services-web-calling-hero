@@ -77,9 +77,6 @@ const App = () => {
           groupId={getGroupId()}
           userId={createUserId()}
           screenWidth={screenWidth}
-          endChatHandler={() => {
-              setPage('end');
-            }}
           errorHandler={() => {setPage('error');}}
         />
       );

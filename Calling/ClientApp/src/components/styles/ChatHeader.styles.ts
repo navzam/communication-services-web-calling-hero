@@ -5,7 +5,7 @@ const chatHeaderContainerStyle = mergeStyles({
   height: 'auto',
   paddingLeft: '3.25rem',
   paddingRight: '3.25rem',
-  marginTop: '0.2rem',
+  marginTop: '1.1rem',
   selectors: {
     '@media (max-width: 65rem)': {
       paddingLeft: '5%',
