@@ -4,7 +4,7 @@ import { Separator, Pivot, PivotItem, Stack } from '@fluentui/react';
 import { Call, LocalVideoStream, VideoDeviceInfo } from '@azure/communication-calling';
 import MediaControls from './MediaControls';
 import { CommandPanelTypes } from './CommandPanel';
-import { UserFriendsIcon, SettingsIcon, FilesEmptyIcon } from '@fluentui/react-icons-northstar';
+import { UserFriendsIcon, SettingsIcon, FilesEmptyIcon, ChatIcon } from '@fluentui/react-icons-northstar';
 import { Constants } from 'core/constants';
 import {
   headerContainer,
@@ -45,6 +45,12 @@ export default (props: HeaderProps): JSX.Element => {
     return selectedPane !== CommandPanelTypes.People
       ? setSelectedPane(CommandPanelTypes.People)
       : setSelectedPane(CommandPanelTypes.None);
+  };
+
+  const toggleChat = (selectedPane: string, setSelectedPane: (pane: string) => void) => {
+    return selectedPane !== CommandPanelTypes.Chat
+      ? setSelectedPane(CommandPanelTypes.Chat)
+      : setSelectedPane(CommandPanelTypes.Chat);
   };
 
   const toggleOptions = (selectedPane: string, setSelectedPane: (pane: string) => void) => {
@@ -99,6 +105,8 @@ export default (props: HeaderProps): JSX.Element => {
             toggleOptions(props.selectedPane, props.setSelectedPane);
           if (item.props.itemKey === CommandPanelTypes.People)
             togglePeople(props.selectedPane, props.setSelectedPane);
+          if (item.props.itemKey == CommandPanelTypes.Chat)
+            toggleChat(props.selectedPane, props.setSelectedPane)
           if (item.props.itemKey === CommandPanelTypes.Files)
             toggleFiles(props.selectedPane, props.setSelectedPane);
         }}
@@ -121,6 +129,16 @@ export default (props: HeaderProps): JSX.Element => {
           onRenderItemLink={() => (
             <UserFriendsIcon
               outline={props.selectedPane === CommandPanelTypes.People ? false : true}
+              size="medium"
+              className={pivotItemStyle}
+            />
+          )}
+        />
+        <PivotItem
+          itemKey={CommandPanelTypes.Chat}
+          onRenderItemLink={() => (
+            <ChatIcon
+              outline={props.selectedPane === CommandPanelTypes.Chat? false : true}
               size="medium"
               className={pivotItemStyle}
             />

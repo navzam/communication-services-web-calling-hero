@@ -6,8 +6,6 @@ import SidePanel from '../containers/SidePanel';
 import {
   chatScreenBottomContainerStyle,
   chatScreenContainerStyle,
-  chatHeaderContainerStyle,
-  topicNameLabelStyle
 } from './styles/ChatScreen.styles';
 import { SidePanelTypes } from './SidePanel';
 
@@ -49,15 +47,6 @@ export default (props: ChatScreenProps): JSX.Element => {
 
   return (
     <Stack className={chatScreenContainerStyle}>
-      <Stack
-          className={chatHeaderContainerStyle}
-          horizontal={true}
-          horizontalAlign="space-between"
-        >
-          <Stack.Item align="center">
-            <div className={topicNameLabelStyle}>Chat</div>
-          </Stack.Item>
-    </Stack>
       <Stack className={chatScreenBottomContainerStyle} horizontal={true}>
         <ChatArea endChatHandler={props.endChatHandler} />
         <Stack.Item grow disableShrink>
