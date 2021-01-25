@@ -202,11 +202,13 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
     console.log('Added file data to table');
 
     const userCredential = tokenStore[threadId];
+
+
     const chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(userCredential.moderatorToken));
     const chatThreadClient = await chatClient.getChatThreadClient(userCredential.threadId);
 
-    await chatThreadClient.sendMessage({content: "hello there's a new file!"});
-
+    await chatThreadClient.sendMessage({content: "hello there's a new file "+newFileId});
+    
     return res.sendStatus(204);
 });
 

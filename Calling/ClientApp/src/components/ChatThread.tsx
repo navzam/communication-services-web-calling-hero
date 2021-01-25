@@ -25,6 +25,7 @@ import {
 } from './styles/ChatThread.styles';
 import { User } from '../core/reducers/ContosoClientReducers';
 import { ChatMessageWithClientMessageId } from '../core/reducers/MessagesReducer';
+import FilesList from 'containers/FilesList';
 
 interface ChatThreadProps {
   isYourLatestMessage(clientMessageId: string, messages: any[]): boolean;
@@ -301,7 +302,6 @@ export default (props: ChatThreadProps): JSX.Element => {
     });
     setMessagesWithAttachedRef(newMessagesWithAttached);
   };
-
   return (
     <Ref innerRef={chatThreadRef}>
       <Stack className={chatContainerStyle}>
@@ -334,6 +334,7 @@ export default (props: ChatThreadProps): JSX.Element => {
                     {renderHyperlink(message.content)}
                   </div>
                 );
+                
                 return {
                   key: index,
                   contentPosition: message.mine ? 'end' : 'start',
@@ -345,6 +346,10 @@ export default (props: ChatThreadProps): JSX.Element => {
                         author={message.senderDisplayName}
                         mine={message.mine}
                       />
+
+                      {messageContentItem.props.children[1].join().includes("hello ,there's ,a ,new ,file")? <FilesList  fileId={messageContentItem.props.children[1][messageContentItem.props.children[1].length-1]}/>:null } 
+
+                      
                       <div className={readReceiptIconStyle(message.mine)}>
                         {readReceiptIcon(message)}
                       </div>
