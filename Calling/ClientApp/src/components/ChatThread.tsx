@@ -46,6 +46,12 @@ interface ChatThreadProps {
   failedMessages: string[];
 }
 
+interface FileMessage {
+  event: "FileUpload",
+  fileName: string,
+  fileId: string
+}
+
 // Reference: https://stackoverflow.com/questions/33235890/react-replace-links-in-a-text
 const renderHyperlink = (text: string) =>
   text.split(' ').map((part) =>
@@ -307,20 +313,16 @@ export default (props: ChatThreadProps): JSX.Element => {
     setMessagesWithAttachedRef(newMessagesWithAttached);
   };
 
-  const isUploadedFileMessage = (messageContent: string): Boolean => {
+  const uploadedFileMessage = (messageContent: string): FileMessage | null => {
     let messageContentJson = undefined;
     try {
       messageContentJson = JSON.parse(messageContent);
     } catch (error) {
       // Not a file upload event.
-      return false;
+      return null;
     }
 
-    if (messageContentJson.event && messageContentJson.event !== "FileUpload") {
-      return false;
-    }
-
-    return true;
+    return messageContentJson;
   };
 
   return (
@@ -343,12 +345,8 @@ export default (props: ChatThreadProps): JSX.Element => {
             <Chat
               styles={chatStyle}
               items={messagesWithAttached.map((message: any, index: number) => {
-                if (isUploadedFileMessage(message.content)) {
-                  const messageContent = JSON.parse(message.content);
-                  if (!messageContent) {
-                    return {};
-                  }
-
+                const jsonMessage = uploadedFileMessage(message.content);
+                if (jsonMessage && jsonMessage.event && jsonMessage.event === "FileUpload") {
                   return {
                     key: index,
                     contentPosition: message.mine ? 'end' : 'start',
@@ -360,7 +358,7 @@ export default (props: ChatThreadProps): JSX.Element => {
                         </Flex>
                         </CardHeader>
                         <CardBody>
-                            <FilesList fileId={messageContent.fileId} showNoFilesMessage={false}/>
+                            <FilesList fileId={jsonMessage.fileId} showNoFilesMessage={false}/>
                         </CardBody>
                       </Card>
                     )

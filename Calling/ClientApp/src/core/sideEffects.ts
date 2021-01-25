@@ -460,7 +460,7 @@ export const uploadSelectedFile = (file: File) => {
     const threadId = state.thread.threadId;
 
     if (userId === undefined || threadId === undefined) {
-      console.error(`Failed to make sendFile() API call because userId is undefined`);
+      console.error(`Failed to make sendFile() API call because userId or threadId is undefined`);
       return false;
     }
 
