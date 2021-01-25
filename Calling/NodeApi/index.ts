@@ -1,14 +1,12 @@
 import * as dotenv from 'dotenv';
 dotenv.config();
 
-import express, { json, RequestHandler } from 'express';
+import express, { RequestHandler } from 'express';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
-import { ChatClient, ChatThreadClient } from '@azure/communication-chat';
+import { ChatClient } from '@azure/communication-chat';
 import { AzureCommunicationUserCredential } from '@azure/communication-common';
-import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/storage-blob';
-import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
 
 // TODO: move to declaration file
 import { addFileMetadata, addUserDetails, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUserDetails, uploadFile } from './fileService';
@@ -95,11 +93,11 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
 
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
-    if(users.length==0)
+    if (users.length === 0)
         return res.sendStatus(403);
 
     const files = await getFilesForGroup(groupId, storageConnectionString, tableName);
-    files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
+    files.sort((a, b) => new Date(b.uploadDateTime).getTime() - new Date(a.uploadDateTime).getTime());
 
     return res.status(200).send(files);
 });
@@ -110,7 +108,7 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
 
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getUserDetails(groupId, userId, storageConnectionString, userDetailTable);
-    if(users.length==0)
+    if (users.length === 0)
         return res.sendStatus(403);
 
     const fileId = req.params['fileId'];

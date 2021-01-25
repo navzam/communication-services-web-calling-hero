@@ -1,8 +1,9 @@
 import { Stack, TooltipHost, PrimaryButton, Icon } from '@fluentui/react';
 import {
   Card,
+  CardBody,
+  CardHeader,
   Chat,
-  Image,
   MessageSeenIcon,
   Flex,
   Ref,
@@ -10,6 +11,7 @@ import {
   PresenceAvailableIcon,
   PresenceStrokeIcon,
   RedbangIcon,
+  Text,
 } from '@fluentui/react-northstar';
 import React, { useEffect, useState, createRef, useRef } from 'react';
 import { LiveAnnouncer, LiveMessage } from 'react-aria-live';
@@ -304,6 +306,7 @@ export default (props: ChatThreadProps): JSX.Element => {
     });
     setMessagesWithAttachedRef(newMessagesWithAttached);
   };
+
   const isUploadedFileMessage = (messageContent: string): Boolean => {
     let messageContentJson = undefined;
     try {
@@ -319,10 +322,6 @@ export default (props: ChatThreadProps): JSX.Element => {
 
     return true;
   };
-
-  const imageUrl = (imageId: string): string => {
-    return `blob:http://localhost:3000/${imageId}`;
-  }
 
   return (
     <Ref innerRef={chatThreadRef}>
@@ -350,16 +349,19 @@ export default (props: ChatThreadProps): JSX.Element => {
                     return {};
                   }
 
-                  const blobUrl = imageUrl(messageContent.fileId);
                   return {
                     key: index,
                     contentPosition: message.mine ? 'end' : 'start',
                     message: (
-                      <Card compact aria-roledescription="image card">
-                        <Card.Preview fitted>
-                           Uploaded an image
-                          <Image fluid src={blobUrl} />
-                        </Card.Preview>
+                      <Card aria-roledescription="image card">
+                        <CardHeader>
+                        <Flex column>
+                            <Text content="A file was shared" weight="bold" />
+                        </Flex>
+                        </CardHeader>
+                        <CardBody>
+                            <FilesList fileId={messageContent.fileId} showNoFilesMessage={false}/>
+                        </CardBody>
                       </Card>
                     )
                   };
@@ -377,7 +379,7 @@ export default (props: ChatThreadProps): JSX.Element => {
                     {renderHyperlink(message.content)}
                   </div>
                 );
-                
+
                 return {
                   key: index,
                   contentPosition: message.mine ? 'end' : 'start',
@@ -390,9 +392,6 @@ export default (props: ChatThreadProps): JSX.Element => {
                         mine={message.mine}
                       />
 
-                      {messageContentItem.props.children[1].join().includes("hello ,there's ,a ,new ,file")? <FilesList  fileId={messageContentItem.props.children[1][messageContentItem.props.children[1].length-1]}/>:null } 
-
-                      
                       <div className={readReceiptIconStyle(message.mine)}>
                         {readReceiptIcon(message)}
                       </div>
