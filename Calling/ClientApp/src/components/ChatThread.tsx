@@ -1,6 +1,8 @@
 import { Stack, TooltipHost, PrimaryButton, Icon } from '@fluentui/react';
 import {
+  Card,
   Chat,
+  Image,
   MessageSeenIcon,
   Flex,
   Ref,
@@ -302,6 +304,26 @@ export default (props: ChatThreadProps): JSX.Element => {
     });
     setMessagesWithAttachedRef(newMessagesWithAttached);
   };
+  const isUploadedFileMessage = (messageContent: string): Boolean => {
+    let messageContentJson = undefined;
+    try {
+      messageContentJson = JSON.parse(messageContent);
+    } catch (error) {
+      // Not a file upload event.
+      return false;
+    }
+
+    if (messageContentJson.event && messageContentJson.event !== "FileUpload") {
+      return false;
+    }
+
+    return true;
+  };
+
+  const imageUrl = (imageId: string): string => {
+    return `blob:http://localhost:3000/${imageId}`;
+  }
+
   return (
     <Ref innerRef={chatThreadRef}>
       <Stack className={chatContainerStyle}>
@@ -322,6 +344,27 @@ export default (props: ChatThreadProps): JSX.Element => {
             <Chat
               styles={chatStyle}
               items={messagesWithAttached.map((message: any, index: number) => {
+                if (isUploadedFileMessage(message.content)) {
+                  const messageContent = JSON.parse(message.content);
+                  if (!messageContent) {
+                    return {};
+                  }
+
+                  const blobUrl = imageUrl(messageContent.fileId);
+                  return {
+                    key: index,
+                    contentPosition: message.mine ? 'end' : 'start',
+                    message: (
+                      <Card compact aria-roledescription="image card">
+                        <Card.Preview fitted>
+                           Uploaded an image
+                          <Image fluid src={blobUrl} />
+                        </Card.Preview>
+                      </Card>
+                    )
+                  };
+                }
+
                 const liveAuthor = `${message.senderDisplayName} says `;
                 const messageContentItem = (
                   <div>
