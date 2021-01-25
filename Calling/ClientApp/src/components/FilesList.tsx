@@ -9,6 +9,7 @@ export interface FilesListProps {
         blobUrl: string | null;
         isDownloading: boolean;
     }>;
+    fileId: string;
     groupId: string;
     downloadFile: (fileId: string) => void;
     clearFileBlobUrl: (fileId: string) => void;
@@ -23,7 +24,17 @@ export default (props: FilesListProps): JSX.Element => {
     }
 
     const fileGridElements: JSX.Element[] = [];
-    props.files.forEach((file, fileId) => {
+
+    var files: Map<string, {
+        filename: string;
+        blobUrl: string | null;
+        isDownloading: boolean;
+    } | undefined> | undefined;
+
+
+    //Display Image
+    const imageDisplay = (file: { filename: string; blobUrl: string | null; isDownloading: boolean; }, fileId: string) => {
+
         const isImage = file.filename.toLowerCase().endsWith('.png') || file.filename.toLowerCase().endsWith('.jpg');
         const hasImagePreview = isImage && file.blobUrl !== null;
         const nonImageIcon: IIconProps = { iconName: 'Document' };
@@ -42,10 +53,10 @@ export default (props: FilesListProps): JSX.Element => {
                 ariaLabel: 'download file',
                 disabled: file.isDownloading || (downloadClicked.get(fileId) && file.blobUrl !== null),
             }
-            : {
-                children: <Spinner />,
-                disabled: true,
-            };
+                : {
+                    children: <Spinner />,
+                    disabled: true,
+                };
         const previewButton: IButtonProps = {
             iconProps: {
                 iconName: 'MiniExpand',
@@ -61,22 +72,37 @@ export default (props: FilesListProps): JSX.Element => {
                     imageFit={ImageFit.cover}
                     imageSrc={hasImagePreview ? file.blobUrl! : undefined}
                     iconProps={hasImagePreview ? undefined : (isImage ? imageIcon : nonImageIcon)} />
-                    <DocumentCardTitle title={file.filename} />
-                    { downloadClicked.get(fileId) && file.blobUrl !== null &&
-                        <AutoDownloadLink link={file.blobUrl} downloadName={file.filename} onTriggered={() => {
-                            setDownloadClicked(new Map(downloadClicked.set(fileId, false)));
-                            if (!isImage) {
-                                // TODO: should also revoke the object URL somewhere
-                                props.clearFileBlobUrl(fileId);
-                            }
-                        }} />
-                    }
+                <DocumentCardTitle title={file.filename} />
+                { downloadClicked.get(fileId) && file.blobUrl !== null &&
+                    <AutoDownloadLink link={file.blobUrl} downloadName={file.filename} onTriggered={() => {
+                        setDownloadClicked(new Map(downloadClicked.set(fileId, false)));
+                        if (!isImage) {
+                            // TODO: should also revoke the object URL somewhere
+                            props.clearFileBlobUrl(fileId);
+                        }
+                    }} />
+                }
                 <DocumentCardActions actions={isImage ? [downloadButton, previewButton] : [downloadButton]} />
             </DocumentCard>
         ));
-    });
+    }
 
-    const numRows = Math.floor(props.files.size / 2);
+    var file;
+    if (props.fileId != undefined)
+        file = props.files.get(props.fileId.trim());
+    if (file !== undefined && props.fileId !== undefined) {
+        files?.set(props.fileId.trim(), file);
+        imageDisplay(file, props.fileId.trim());
+    }
+    else {
+        props.files.forEach((file, fileId) => {
+            imageDisplay(file, fileId);
+
+        });
+    }
+
+    const numRows = props.fileId != undefined? 1: Math.floor(props.files.size / 2);
+    
     const numCols = 1;
 
     return (
