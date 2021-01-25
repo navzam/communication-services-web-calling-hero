@@ -13,6 +13,7 @@ export interface FilesListProps {
     groupId: string;
     downloadFile: (fileId: string) => void;
     clearFileBlobUrl: (fileId: string) => void;
+    showNoFilesMessage: boolean;
 }
 
 export default (props: FilesListProps): JSX.Element => {
@@ -20,7 +21,11 @@ export default (props: FilesListProps): JSX.Element => {
     const [downloadClicked, setDownloadClicked] = useState<Map<string, boolean>>(new Map<string, boolean>());
 
     if (!props.files || props.files.size === 0) {
-        return <div className={filesListStyle}>No files have been shared yet.</div>
+        if (props.showNoFilesMessage) {
+            return <div className={filesListStyle}>No files have been shared yet.</div>
+        }
+
+        return <></>
     }
 
     const fileGridElements: JSX.Element[] = [];
@@ -102,7 +107,6 @@ export default (props: FilesListProps): JSX.Element => {
     }
 
     const numRows = props.fileId != undefined? 1: Math.floor(props.files.size / 2);
-    
     const numCols = 1;
 
     return (

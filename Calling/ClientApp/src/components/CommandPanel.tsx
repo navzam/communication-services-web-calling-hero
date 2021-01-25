@@ -39,7 +39,7 @@ export default (props: CommandPanelProps): JSX.Element => {
       <Stack.Item className={paneHeaderStyle}>
         <div className={paneHeaderTextStyle}>{props.selectedPane}</div>
       </Stack.Item>
-      
+
         {props.selectedPane === CommandPanelTypes.People && (
           <Stack.Item styles={fullHeightStyles}>
             <ParticipantStack />
@@ -66,7 +66,7 @@ export default (props: CommandPanelProps): JSX.Element => {
         )}
         {props.selectedPane === CommandPanelTypes.Files && (
           <Stack.Item styles={fullHeightStyles}>
-            <FilesList />
+            <FilesList showNoFilesMessage={true} />
           </Stack.Item>
         )}
         {props.selectedPane === CommandPanelTypes.Files && (
@@ -74,7 +74,7 @@ export default (props: CommandPanelProps): JSX.Element => {
             <FilesFooter onFileChosen={props.onFileChosen} onPhotoTaken={props.onPhotoTaken} />
           </Stack.Item>
         )}
-      
+
     </Stack>
   );
 };

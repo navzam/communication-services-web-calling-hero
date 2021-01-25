@@ -9,6 +9,7 @@ const mapStateToProps = (state: State, props: FilesListProps) => ({
     files: state.files.files,
     groupId: state.calls.group,
     fileId: props.fileId,
+    showNoFilesMessage: props.showNoFilesMessage,
 });
 
 const mapDispatchToProps = (dispatch: any) => ({
