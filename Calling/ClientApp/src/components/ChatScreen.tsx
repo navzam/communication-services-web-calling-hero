@@ -6,13 +6,10 @@ import SidePanel from '../containers/SidePanel';
 import {
   chatScreenBottomContainerStyle,
   chatScreenContainerStyle,
+  chatHeaderContainerStyle,
+  topicNameLabelStyle
 } from './styles/ChatScreen.styles';
 import { SidePanelTypes } from './SidePanel';
-
-import {
-  chatHeaderContainerStyle,
-  topicNameLabelStyle,
-} from './styles/ChatHeader.styles';
 
 interface ChatScreenProps {
   userId: string;
