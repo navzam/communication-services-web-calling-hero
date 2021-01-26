@@ -50,6 +50,7 @@ export interface GroupCallProps {
   isGroup(): void;
   joinGroup(): void;
   endCallHandler(): void;
+  errorHandler(): void;
   attempts: number;
   setAttempts(attempts: number): void;
   onFileChosen(file: File): unknown;
@@ -104,7 +105,7 @@ export default (props: GroupCallProps): JSX.Element => {
               {selectedPane !== CommandPanelTypes.None && (
                   window.innerWidth > Constants.MINI_HEADER_WINDOW_WIDTH ?
                 <Stack.Item disableShrink styles={paneStyles}>
-                  <CommandPanel {...props} selectedPane={selectedPane} setSelectedPane={setSelectedPane} />
+                  <CommandPanel {...props} selectedPane={selectedPane} setSelectedPane={setSelectedPane} userId={props.userId} errorHandler={props.errorHandler}/>
                 </Stack.Item>
                 :
                 <Overlay styles={overlayStyles}>

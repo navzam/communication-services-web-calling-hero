@@ -3,6 +3,7 @@ import NewLocalSettings from './LocalSettings';
 import ParticipantStack from '../containers/ParticipantStack';
 import { VideoDeviceInfo, AudioDeviceInfo } from '@azure/communication-calling';
 import { Stack } from '@fluentui/react';
+import ChatScreen from '../containers/ChatScreen';
 import {
   fullHeightStyles,
   paneHeaderStyle,
@@ -15,6 +16,7 @@ import FilesFooter from './FilesFooter';
 
 export interface CommandPanelProps {
   selectedPane: string;
+  userId: string;
   videoDeviceInfo: VideoDeviceInfo;
   videoDeviceList: VideoDeviceInfo[];
   audioDeviceList: AudioDeviceInfo[];
@@ -24,12 +26,14 @@ export interface CommandPanelProps {
   setAudioDeviceInfo(device: AudioDeviceInfo): void;
   onFileChosen(file: File): unknown;
   onPhotoTaken(dataUrl: string): unknown;
+  errorHandler(): void;
 }
 export enum CommandPanelTypes {
   None = 'none',
   People = 'People',
   Settings = 'Settings',
-  Files = 'Files'
+  Files = 'Files',
+  Chat = 'Chat'
 }
 
 export default (props: CommandPanelProps): JSX.Element => {
@@ -48,6 +52,11 @@ export default (props: CommandPanelProps): JSX.Element => {
         {props.selectedPane === CommandPanelTypes.People && (
           <Stack.Item>
             <Footer />
+          </Stack.Item>
+        )}
+        {props.selectedPane === CommandPanelTypes.Chat && (
+          <Stack.Item styles={fullHeightStyles}>
+            <ChatScreen userId={props.userId} errorHandler={props.errorHandler}/>
           </Stack.Item>
         )}
         {props.selectedPane === CommandPanelTypes.Settings && (
