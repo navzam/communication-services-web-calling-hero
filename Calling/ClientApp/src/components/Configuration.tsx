@@ -27,7 +27,7 @@ import {
 import { MAXIMUM_LENGTH_OF_NAME } from '../constants';
 import {
   CAT,
-  getThreadId
+  // getThreadId
 } from '../Utils/Utils';
 
 export interface ConfigurationScreenProps {
@@ -53,8 +53,8 @@ export interface ConfigurationScreenProps {
   localVideoStream: LocalVideoStream;
   screenWidth: number;
   /* chat */
-  setup(displayName: string, emoji: string, joinChatHandler: Function, userId: string): void;
-  isValidThread(threadId: string | null): any;
+  setup(displayName: string, emoji: string, joinChatHandler: Function, userId: string, groupId: string): void;
+  // isValidThread(threadId: string | null): any;
   addThreadMemberError: boolean | undefined;
   setAddThreadMemberError(addThreadMemberError: boolean | undefined): void;
 }
@@ -70,21 +70,21 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
 
   const { userId, groupId, setUserId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler } = props;
 
-  const [isLoadingThread, setIsLoadingThread] = useState(true);
+  const [isLoadingThread, /*setIsLoadingThread*/] = useState(false);
 
   /* chat */
   const [selectedAvatar ] = useState(CAT);
   const [isNameLengthExceedLimit, setNameLengthExceedLimit] = useState(false);
-  const [isValidThread, setIsValidThread] = useState<boolean | undefined>(
-    undefined
-  );
+  // const [isValidThread, setIsValidThread] = useState<boolean | undefined>(
+  //   undefined
+  // );
 
-  const getThreadIdFromUrl = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const threadId = urlParams.get('threadId');
-    console.log('The thread id is ' + threadId);
-    return threadId;
-  };
+  // const getThreadIdFromUrl = () => {
+  //   const urlParams = new URLSearchParams(window.location.search);
+  //   const threadId = urlParams.get('threadId');
+  //   console.log('The thread id is ' + threadId);
+  //   return threadId;
+  // };
 
 
   const { addThreadMemberError } = props;
@@ -100,13 +100,13 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
       setEmptyWarning(false);
       setNameLengthExceedLimit(false);
       if (!isJoining) {
-        props.setup(name, selectedAvatar, props.startCallHandler, name);
+        props.setup(name, selectedAvatar, props.startCallHandler, name, groupId);
         setIsJoining(true);
       }
     }
   };
 
-  const isValidThreadProp = props.isValidThread;
+  // const isValidThreadProp = props.isValidThread;
 
   useEffect(() => {
     if (addThreadMemberError) {
@@ -118,22 +118,22 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
     } 
   }, [addThreadMemberError]);
 
-  // Validate chat thread
-  useEffect(() => {
-    const isValidThread = async () => {
-      const threadId = getThreadId();
-      if(threadId){
-        setIsLoadingThread(false);
-        if (await isValidThreadProp(threadId)) {
-          setIsValidThread(true);
-        } else {
-          setIsValidThread(false);
-        }
-      }
-    };
-    isValidThread();
+  // // Validate chat thread
+  // useEffect(() => {
+  //   const isValidThread = async () => {
+  //     const threadId = getThreadId();
+  //     if(threadId){
+  //       setIsLoadingThread(false);
+  //       if (await isValidThreadProp(threadId)) {
+  //         setIsValidThread(true);
+  //       } else {
+  //         setIsValidThread(false);
+  //       }
+  //     }
+  //   };
+  //   isValidThread();
 
-  }, [isValidThreadProp]);
+  // }, [isValidThreadProp]);
 
   useEffect(() => {
     setUserId(userId);
@@ -141,22 +141,22 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
     setGroup(groupId);
   }, [userId, groupId, setUserId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler]);
 
-  useEffect(() => {
-    let listener: NodeJS.Timeout = setInterval(async () => {
-      const threadId = getThreadIdFromUrl();
-      if(threadId && !isValidThread){
-        setIsLoadingThread(false);
-        if (await isValidThreadProp(threadId)) {
-          setIsValidThread(true);
-        } else {
-          setIsValidThread(false);
-        }
-       }
-    }, 500);
-    return () => {
-      clearInterval(listener);
-    };
-  }, [isValidThread]);
+  // useEffect(() => {
+  //   let listener: NodeJS.Timeout = setInterval(async () => {
+  //     const threadId = getThreadIdFromUrl();
+  //     if(threadId && !isValidThread){
+  //       setIsLoadingThread(false);
+  //       if (await isValidThreadProp(threadId)) {
+  //         setIsValidThread(true);
+  //       } else {
+  //         setIsValidThread(false);
+  //       }
+  //      }
+  //   }, 500);
+  //   return () => {
+  //     clearInterval(listener);
+  //   };
+  // }, [isValidThread]);
 
   const joinCallLoading = () => {
     return (
@@ -164,13 +164,13 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
     );
   };
 
-  const invalidChatThread = () => {
-    return (
-      <div>
-        <p>thread Id is not valid</p>
-      </div>
-    );
-  };
+  // const invalidChatThread = () => {
+  //   return (
+  //     <div>
+  //       <p>thread Id is not valid</p>
+  //     </div>
+  //   );
+  // };
 
   const joinCallArea = () => {
     return (
@@ -236,7 +236,7 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
   const configurationScreen = () => {
     return (
       <Stack className={mainContainerStyle} horizontalAlign="center" verticalAlign="center">
-         {isValidThread === false ? invalidChatThread() : joinCallArea()}
+         {joinCallArea()}
       </Stack>
   )};
 

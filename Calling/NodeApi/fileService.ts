@@ -27,11 +27,6 @@ interface TableStorageFileMetadata {
     UploadDateTime: Date;
 }
 
-interface UserDetails{
-    UserId: string;
-    appointmentId: string;
-}
-
 // Gets file metadata for all files in a group
 // Uses Table Storage
 export async function getFilesForGroup(groupId: string, storageConnectionString: string, tableName: string): Promise<FileMetadata[]> {
@@ -124,13 +119,22 @@ export async function uploadFile(fileId: string, fileBuffer: Buffer, storageConn
     let blobUploadResponse = await blobClient.uploadData(fileBuffer);
 }
 
+
+
+// USER/GROUP SERVICE FUNCTIONALITY
+
+interface AppointmentUser {
+    UserId: string;
+    appointmentId: string;
+}
+
 // Adds User-group call details
 // Uses Table Storage
-export async function addUserDetails(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<void> {
+export async function addAppointmentUser(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<void> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
     await ensureTableCreated(tableClient);
 
-    const entity: TableEntity<UserDetails> = {
+    const entity: TableEntity<AppointmentUser> = {
         partitionKey: groupId,
         rowKey: userId,
         UserId: userId,
@@ -144,16 +148,16 @@ export async function addUserDetails(groupId: string, userId: string, storageCon
 
 // Gets all users
 // Uses Table Storage
-export async function getUserDetails(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<UserDetails[]> {
+export async function getAppointmentUser(groupId: string, userId: string, storageConnectionString: string, tableName: string): Promise<AppointmentUser[]> {
     const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
     await ensureTableCreated(tableClient);
     
-    const entitiesIter = tableClient.listEntities<UserDetails>({
+    const entitiesIter = tableClient.listEntities<AppointmentUser>({
         queryOptions: {
             filter: `PartitionKey eq '${groupId}' `
         },
     });
-    const users: UserDetails[] = [];
+    const users: AppointmentUser[] = [];
     for await (const entity of entitiesIter) {
         if(entity.UserId==userId)
         users.push({
@@ -163,6 +167,108 @@ export async function getUserDetails(groupId: string, userId: string, storageCon
         });
     }
     return users;
+}
+
+export type UserServiceErrorType = 'UserNotFound' | 'AppointmentNotFound';
+
+export class UserServiceError extends Error {
+    public type: UserServiceErrorType;
+
+    constructor(type: UserServiceErrorType, message?: string) {
+        super(message);
+        Object.setPrototypeOf(this, new.target.prototype);
+
+        this.name = 'UserServiceError';
+        this.type = type;
+    }
+}
+
+export interface User {
+    userId: string;
+    acsUserId: string;
+}
+
+interface TableStorageUser {
+    UserId: string;
+    ACSUserId: string;
+}
+
+export async function getUser(userId: string, storageConnectionString: string, tableName: string): Promise<User> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+
+    try {
+        const entityResponse = await tableClient.getEntity<TableStorageUser>(userId, userId);
+        return {
+            userId: entityResponse.UserId,
+            acsUserId: entityResponse.ACSUserId,
+        };
+    } catch (e) {
+        if (e instanceof RestError && e.statusCode === 404) {
+            throw(new UserServiceError('UserNotFound'));
+        }
+
+        throw e;
+    }
+}
+
+export async function addUser(user: User, storageConnectionString: string, tableName: string): Promise<void> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+
+    const entity: TableEntity<TableStorageUser> = {
+        partitionKey: user.userId,
+        rowKey: user.userId,
+        UserId: user.userId,
+        ACSUserId: user.acsUserId,
+    };
+    await tableClient.createEntity(entity);
+}
+
+export interface Appointment {
+    appointmentId: string;
+    acsChatThreadId: string;
+    acsModeratorUserId: string;
+}
+
+interface TableStorageAppointment {
+    AppointmentId: string;
+    ACSChatThreadId: string;
+    ACSModeratorUserId: string;
+}
+
+export async function getAppointment(appointmentId: string, storageConnectionString: string, tableName: string): Promise<Appointment> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+
+    try {
+        const entityResponse = await tableClient.getEntity<TableStorageAppointment>(appointmentId, appointmentId);
+        return {
+            appointmentId: entityResponse.AppointmentId,
+            acsChatThreadId: entityResponse.ACSChatThreadId,
+            acsModeratorUserId: entityResponse.ACSModeratorUserId,
+        };
+    } catch (e) {
+        if (e instanceof RestError && e.statusCode === 404) {
+            throw(new UserServiceError('AppointmentNotFound'));
+        }
+
+        throw e;
+    }
+}
+
+export async function addAppointment(appointment: Appointment, storageConnectionString: string, tableName: string): Promise<void> {
+    const tableClient = TableClient.fromConnectionString(storageConnectionString, tableName);
+    await ensureTableCreated(tableClient);
+
+    const entity: TableEntity<TableStorageAppointment> = {
+        partitionKey: appointment.appointmentId,
+        rowKey: appointment.appointmentId,
+        AppointmentId: appointment.appointmentId,
+        ACSChatThreadId: appointment.acsChatThreadId,
+        ACSModeratorUserId: appointment.acsModeratorUserId,
+    };
+    await tableClient.createEntity(entity);
 }
 
 async function ensureTableCreated(tableClient: TableClient): Promise<void> {

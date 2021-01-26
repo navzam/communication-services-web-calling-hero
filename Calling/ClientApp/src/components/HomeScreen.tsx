@@ -1,6 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
-import React, { useState } from 'react';
-import { Stack, PrimaryButton, Icon, Image, IImageStyles, Spinner } from '@fluentui/react';
+import React, { /*useState*/ } from 'react';
+import { Stack, PrimaryButton, Icon, Image, IImageStyles, /*Spinner*/ } from '@fluentui/react';
 import { VideoCameraEmphasisIcon } from '@fluentui/react-icons-northstar';
 import heroSVG from '../assets/hero.svg';
 import {
@@ -18,7 +18,7 @@ import {
 
 export interface HomeScreenProps {
   startCallHandler(): void;
-  createThreadHandler(): void;
+  // createThreadHandler(): void;
 }
 
 const imageStyleProps: IImageStyles = {
@@ -34,7 +34,7 @@ export default (props: HomeScreenProps): JSX.Element => {
   const imageProps = { src: heroSVG.toString() };
   const headerTitle = 'Exceptionally simple video calling';
   const startCallButtonText = 'Start a call';
-  const spinnerLabel = 'Initializing client...';
+  // const spinnerLabel = 'Initializing client...';
   const listItems = [
     'Customize with your web stack',
     'Connect with users with seamless collaboration across web',
@@ -42,18 +42,18 @@ export default (props: HomeScreenProps): JSX.Element => {
     'Learn about this'
   ];
 
-  const [isCreatingThread, setIsCreatingThread] = useState(false);
+  // const [isCreatingThread, setIsCreatingThread] = useState(false);
 
-  const onCreateThread = () => {
-    setIsCreatingThread(true);
-    props.createThreadHandler();
-  };
+  // const onCreateThread = () => {
+  //   setIsCreatingThread(true);
+  //   props.createThreadHandler();
+  // };
 
-  const createThreadLoading = () => {
-    return (
-      <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
-    );
-  };
+  // const createThreadLoading = () => {
+  //   return (
+  //     <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
+  //   );
+  // };
 
   const homeScreen = () => {
     return (
@@ -80,7 +80,7 @@ export default (props: HomeScreenProps): JSX.Element => {
           <PrimaryButton 
             className={buttonStyle} 
             onClick={async () => {
-              onCreateThread();
+              // onCreateThread();
               props.startCallHandler();
             }}>
             <VideoCameraEmphasisIcon className={videoCameraIconStyle} size="medium" />
@@ -97,5 +97,5 @@ export default (props: HomeScreenProps): JSX.Element => {
     );
   };
 
-  return isCreatingThread ? createThreadLoading() : homeScreen();
+  return homeScreen();
 };

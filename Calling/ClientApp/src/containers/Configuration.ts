@@ -10,7 +10,7 @@ import { AudioDeviceInfo, VideoDeviceInfo, LocalVideoStream } from '@azure/commu
 import { setLocalVideoStream } from '../core/actions/streams';
 
 /* chat */
-import { addUserToThread, isValidThread } from '../core/sideEffects';
+import { addUserToThread, /*isValidThread*/ } from '../core/sideEffects';
 import { setAddThreadMemberError } from '../core/actions/ThreadMembersAction';
 
 const mapStateToProps = (state: State, props: ConfigurationScreenProps) => ({
@@ -40,10 +40,10 @@ const mapDispatchToProps = (dispatch: any) => ({
   setGroup: (groupId: string) => dispatch(setGroup(groupId)),
   updateDevices: () => dispatch(updateDevices()),
   /* chat */
-  setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string) => {
-    await dispatch(addUserToThread(displayName, emoji, userId, goToNextScreen));
+  setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string, groupId: string) => {
+    await dispatch(addUserToThread(displayName, emoji, userId, groupId, goToNextScreen));
   },
-  isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
+  // isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
   setAddThreadMemberError: async (addThreadMemberError: boolean | undefined) => {
     dispatch(setAddThreadMemberError(addThreadMemberError));
   }
