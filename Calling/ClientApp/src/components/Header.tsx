@@ -50,7 +50,7 @@ export default (props: HeaderProps): JSX.Element => {
   const toggleChat = (selectedPane: string, setSelectedPane: (pane: string) => void) => {
     return selectedPane !== CommandPanelTypes.Chat
       ? setSelectedPane(CommandPanelTypes.Chat)
-      : setSelectedPane(CommandPanelTypes.Chat);
+      : setSelectedPane(CommandPanelTypes.None);
   };
 
   const toggleOptions = (selectedPane: string, setSelectedPane: (pane: string) => void) => {
