@@ -1,13 +1,15 @@
 import { connect } from 'react-redux';
 import { State } from '../core/reducers';
-import FilesList from '../components/FilesList';
+import FilesList, { FilesListProps } from '../components/FilesList';
 import { } from '@azure/communication-common';
 import { getFile } from 'core/sideEffects';
 import { setFileBlobUrl } from 'core/actions/files';
 
-const mapStateToProps = (state: State) => ({
+const mapStateToProps = (state: State, props: FilesListProps) => ({
     files: state.files.files,
-    groupId: state.calls.group
+    groupId: state.calls.group,
+    fileId: props.fileId,
+    showNoFilesMessage: props.showNoFilesMessage,
 });
 
 const mapDispatchToProps = (dispatch: any) => ({

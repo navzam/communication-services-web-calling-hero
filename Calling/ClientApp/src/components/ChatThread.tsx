@@ -1,5 +1,8 @@
 import { Stack, TooltipHost, PrimaryButton, Icon } from '@fluentui/react';
 import {
+  Card,
+  CardBody,
+  CardHeader,
   Chat,
   MessageSeenIcon,
   Flex,
@@ -8,6 +11,7 @@ import {
   PresenceAvailableIcon,
   PresenceStrokeIcon,
   RedbangIcon,
+  Text,
 } from '@fluentui/react-northstar';
 import React, { useEffect, useState, createRef, useRef } from 'react';
 import { LiveAnnouncer, LiveMessage } from 'react-aria-live';
@@ -25,6 +29,7 @@ import {
 } from './styles/ChatThread.styles';
 import { User } from '../core/reducers/ContosoClientReducers';
 import { ChatMessageWithClientMessageId } from '../core/reducers/MessagesReducer';
+import FilesList from 'containers/FilesList';
 
 interface ChatThreadProps {
   isYourLatestMessage(clientMessageId: string, messages: any[]): boolean;
@@ -39,6 +44,12 @@ interface ChatThreadProps {
   user: User;
   users: any;
   failedMessages: string[];
+}
+
+interface FileMessage {
+  event: "FileUpload",
+  fileName: string,
+  fileId: string
 }
 
 // Reference: https://stackoverflow.com/questions/33235890/react-replace-links-in-a-text
@@ -302,6 +313,18 @@ export default (props: ChatThreadProps): JSX.Element => {
     setMessagesWithAttachedRef(newMessagesWithAttached);
   };
 
+  const uploadedFileMessage = (messageContent: string): FileMessage | null => {
+    let messageContentJson = undefined;
+    try {
+      messageContentJson = JSON.parse(messageContent);
+    } catch (error) {
+      // Not a file upload event.
+      return null;
+    }
+
+    return messageContentJson;
+  };
+
   return (
     <Ref innerRef={chatThreadRef}>
       <Stack className={chatContainerStyle}>
@@ -322,6 +345,26 @@ export default (props: ChatThreadProps): JSX.Element => {
             <Chat
               styles={chatStyle}
               items={messagesWithAttached.map((message: any, index: number) => {
+                const jsonMessage = uploadedFileMessage(message.content);
+                if (jsonMessage && jsonMessage.event && jsonMessage.event === "FileUpload") {
+                  return {
+                    key: index,
+                    contentPosition: message.mine ? 'end' : 'start',
+                    message: (
+                      <Card aria-roledescription="image card">
+                        <CardHeader>
+                        <Flex column>
+                            <Text content="A file was shared" weight="bold" />
+                        </Flex>
+                        </CardHeader>
+                        <CardBody>
+                            <FilesList fileId={jsonMessage.fileId} showNoFilesMessage={false}/>
+                        </CardBody>
+                      </Card>
+                    )
+                  };
+                }
+
                 const liveAuthor = `${message.senderDisplayName} says `;
                 const messageContentItem = (
                   <div>
@@ -334,6 +377,7 @@ export default (props: ChatThreadProps): JSX.Element => {
                     {renderHyperlink(message.content)}
                   </div>
                 );
+
                 return {
                   key: index,
                   contentPosition: message.mine ? 'end' : 'start',
@@ -345,6 +389,7 @@ export default (props: ChatThreadProps): JSX.Element => {
                         author={message.senderDisplayName}
                         mine={message.mine}
                       />
+
                       <div className={readReceiptIconStyle(message.mine)}>
                         {readReceiptIcon(message)}
                       </div>
