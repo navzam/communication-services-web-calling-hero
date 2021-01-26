@@ -10,7 +10,7 @@ import ConfigurationScreen from './containers/Configuration';
 import { v1 as createGUID } from 'uuid';
 import { loadTheme, initializeIcons } from '@fluentui/react';
 import { utils } from './Utils/Utils';
-import CallScreen from './components/CallScreen';
+import GroupCall from './containers/GroupCall';
 
 const sdkVersion = require('../package.json').dependencies['@azure/communication-calling'];
 const lastUpdated = `Last Updated ${utils.getBuildTime()} with @azure/communication-calling:${sdkVersion}`;
@@ -72,16 +72,13 @@ const App = () => {
       );
     } else if (page === 'call') {
       return (
-        <CallScreen
+        <GroupCall
           endCallHandler={() => setPage('endCall')}
           groupId={getGroupId()}
           userId={createUserId()}
           screenWidth={screenWidth}
-          endChatHandler={() => {
-              setPage('end');
-            }}
           errorHandler={() => {setPage('error');}}
-        />
+                />
       );
     } else if (page === 'endCall') {
       return (

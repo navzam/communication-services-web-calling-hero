@@ -444,16 +444,24 @@ export const getFile = (fileId: string) => {
   };
 };
 
+const getThreadIdFromUrl = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const threadId = urlParams.get('threadId');
+  return threadId;
+};
+
 export const uploadSelectedFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
-    if (userId === undefined) {
-      console.error(`Failed to make sendFile() API call because userId is undefined`);
+    const threadId = state.thread.threadId;
+
+    if (userId === undefined || threadId === undefined) {
+      console.error(`Failed to make sendFile() API call because userId or threadId is undefined`);
       return false;
     }
 
-    return await uploadFile(userId, state.calls.group, file, file.name);
+    return await uploadFile(userId, state.calls.group, getThreadIdFromUrl(), file, file.name);
   }
 };
 
@@ -461,17 +469,20 @@ export const uploadCapturedImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
-    if (userId === undefined) {
+    const threadId = state.thread.threadId;
+    console.log(`threadId for uploading: ${threadId}`);
+
+    if (userId === undefined || threadId === undefined) {
       console.error(`Failed to make sendImage() API call because userId is undefined`);
       return false;
     }
 
     const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
-    return await uploadFile(userId, state.calls.group, base64String, 'user_photo.png');
+    return await uploadFile(userId, state.calls.group, getThreadIdFromUrl(), base64String, 'user_photo.png');
   }
 };
 
-const uploadFile = async (userId: string, groupId: string, media: string | File, fileName: string) => {
+const uploadFile = async (userId: string, groupId: string, threadId: string | null, media: string | File, fileName: string) => {
   const data = new FormData();
   if (media instanceof File) {
     data.append('file', media);
@@ -480,6 +491,11 @@ const uploadFile = async (userId: string, groupId: string, media: string | File,
   }
   data.append('fileName', fileName);
   data.append('groupId', groupId);
+
+  if (threadId) {
+    data.append('threadId', threadId);
+  }
+
   let sendFileRequestOptions = {
     method: 'POST',
     body: data,

@@ -7,8 +7,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { CommunicationIdentityClient } from '@azure/communication-administration';
 import { ChatClient } from '@azure/communication-chat';
 import { AzureCommunicationUserCredential } from '@azure/communication-common';
-import { BlobServiceClient, BlobUploadCommonResponse, RestError } from '@azure/storage-blob';
-import { TableClient, TableEntity, TablesSharedKeyCredential } from '@azure/data-tables';
 
 // TODO: move to declaration file
 import { addFileMetadata, addUser, addAppointmentUser, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUser, getAppointmentUser, uploadFile, User, UserServiceError, getAppointment, Appointment, addAppointment } from './fileService';
@@ -70,7 +68,6 @@ const fakeAuthMiddleware: RequestHandler = (req, res, next) => {
     }
 
     req.userId = authValue;
-
     next();
 };
 
@@ -122,12 +119,11 @@ app.get('/groups/:groupId/files', fakeAuthMiddleware, async (req, res) => {
 
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getAppointmentUser(groupId, userId, storageConnectionString, appointmentUserTableName);
-    if (users.length === 0) {
+    if (users.length === 0)
         return res.sendStatus(403);
-    }
 
     const files = await getFilesForGroup(groupId, storageConnectionString, fileMetadataTableName);
-    files.sort((a, b) => b.uploadDateTime.getTime() - a.uploadDateTime.getTime());
+    files.sort((a, b) => new Date(b.uploadDateTime).getTime() - new Date(a.uploadDateTime).getTime());
 
     return res.status(200).send(files);
 });
@@ -138,9 +134,8 @@ app.get('/groups/:groupId/files/:fileId', fakeAuthMiddleware, async (req, res) =
 
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getAppointmentUser(groupId, userId, storageConnectionString, appointmentUserTableName);
-    if (users.length === 0) {
+    if (users.length === 0)
         return res.sendStatus(403);
-    }
 
     const fileId = req.params['fileId'];
 
@@ -183,12 +178,12 @@ interface TableStorageFileMetadata {
 app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('file'), async (req, res) => {
     const groupId = req.params['groupId'];
     const userId = req.userId;
+    const threadId = req.body.threadId;
 
     // TODO: Verify that user is allowed to get files for this chat/call
     const users = await getAppointmentUser(groupId, userId, storageConnectionString, appointmentUserTableName);
-    if (users.length === 0) {
+    if (users.length === 0)
         return res.sendStatus(403);
-    }
 
     const body = req.body as SendFileRequestBody;
     if (req.file === undefined && body?.image === undefined) {
@@ -201,6 +196,10 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
 
     if (groupId === undefined) {
         return res.status(400).send("Invalid group ID");
+    }
+
+    if (threadId === undefined) {
+        return res.status(400).send("Invalid thread ID");
     }
 
     // Upload file to Blob Storage
@@ -226,16 +225,27 @@ app.post('/groups/:groupId/files', fakeAuthMiddleware, uploadMiddleware.single('
 
     console.log('Added file data to table');
 
+    const userCredential = tokenStore[threadId];
+    const chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(userCredential.moderatorToken));
+    const chatThreadClient = await chatClient.getChatThreadClient(userCredential.threadId);
+
+    // "Event" to identify to chat renderer that this message should be parsed before rendering messages.
+    const addedFileMessage = {
+        event: "FileUpload",
+        fileName: body.fileName,
+        fileId: newFileId
+    };
+
+    await chatThreadClient.sendMessage({content: JSON.stringify(addedFileMessage)});
     return res.sendStatus(204);
 });
 
 /* chat */
-// getEnvironmentUrl
 const getEnvironmentUrl = () : string => {
     var connectionString = acsConnectionString.replace("endpoint=", "");
 
     var environmentUrl = new URL(connectionString);
-    return environmentUrl.protocol + "//" + environmentUrl.host; 
+    return environmentUrl.protocol + "//" + environmentUrl.host;
 };
 
 app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {

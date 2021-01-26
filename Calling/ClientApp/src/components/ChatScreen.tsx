@@ -2,7 +2,6 @@ import { Stack } from '@fluentui/react';
 import React, { useEffect, useState } from 'react';
 
 import ChatArea from '../containers/ChatArea';
-import ChatHeader from '../containers/ChatHeader';
 import SidePanel from '../containers/SidePanel';
 import {
   chatScreenBottomContainerStyle,
@@ -22,9 +21,7 @@ interface ChatScreenProps {
 
 export default (props: ChatScreenProps): JSX.Element => {
   // People pane will be visible when a chat is joined if the window width is greater than 600
-  const [selectedPane, setSelectedPane] = useState(
-    window.innerWidth > 600 ? SidePanelTypes.People : SidePanelTypes.None
-  );
+  const [selectedPane, setSelectedPane] = useState(SidePanelTypes.None);
 
   const { errorHandler, threadMembersError, getThread } = props;
 
@@ -50,11 +47,6 @@ export default (props: ChatScreenProps): JSX.Element => {
 
   return (
     <Stack className={chatScreenContainerStyle}>
-      <ChatHeader
-        endChatHandler={props.endChatHandler}
-        selectedPane={selectedPane}
-        setSelectedPane={setSelectedPane}
-      />
       <Stack className={chatScreenBottomContainerStyle} horizontal={true}>
         <ChatArea endChatHandler={props.endChatHandler} />
         <Stack.Item grow disableShrink>

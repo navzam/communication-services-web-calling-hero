@@ -12,6 +12,7 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 
 ![Homepage](./Media/homepage-sample-calling.png)
 
+![CallScreen](./Media/call-screen.png)
 ## Prerequisites
 
 - Create an Azure account with an active subscription. For details, see [Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F)
@@ -46,6 +47,12 @@ Additional documentation for this sample can be found on [Microsoft Docs](https:
 1. Go to the `./Calling/NodeApi` folder and run `npm install` followed by `npm run watch`.
 2. Go to the `./Calling/ClientApp` folder and run `npm install` followed by `npm run start`.
 3. Open a browser to `localhost:3000`
+
+## Debug the front end
+Using the [launch.json](.vscode/launch.json) file, you can debug the front-end code with Chrome.
+
+1. Launch Chrome `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222`
+2. On VS Code Click Run > Start Debugging 
 
 ### Troubleshooting
 

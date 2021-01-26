@@ -9,7 +9,6 @@ interface ChatScreenProps {
     userId: string;
     screenWidth: number;
     endCallHandler(): void;
-    endChatHandler(): void;
     errorHandler(): void;
   }
 
@@ -26,7 +25,6 @@ export default (props: ChatScreenProps): JSX.Element => {
             </Stack.Item>
             <Stack.Item>
                 <ChatScreen
-                    endChatHandler={props.endChatHandler}
                     userId={props.userId}
                     errorHandler={props.errorHandler}
                 />
