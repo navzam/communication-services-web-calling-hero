@@ -35,8 +35,7 @@ export default (props: DisplayNameFieldProps): JSX.Element => {
     props.setName(event.target.value);
     if (event.target.value) {
       props.setEmptyWarning(false);
-    }  else if (event.target.value.length > MAXIMUM_LENGTH_OF_NAME) {
-      props.setNameLengthExceedLimit(true);
+      props.setNameLengthExceedLimit(event.target.value.length > MAXIMUM_LENGTH_OF_NAME);
     } else {
       props.setEmptyWarning(true);
       props.setNameLengthExceedLimit(false);

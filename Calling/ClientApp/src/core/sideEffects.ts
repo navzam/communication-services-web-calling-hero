@@ -70,6 +70,7 @@ import {
   setRemoveThreadMemberError,
   setAddThreadMemberError
 } from './actions/ThreadMembersAction';
+import { setUserId } from './actions/sdk';
 
 export const setMicrophone = (mic: boolean) => {
   return async (dispatch: Dispatch, getState: () => State) => {
@@ -176,7 +177,6 @@ export const initCallClient = (userId: string, unsupportedStateHandler: () => vo
       }
 
       callAgent.updateDisplayName(userId);
-      blobAuthorization( dispatch, getState);
 
       let deviceManager: DeviceManager = await callClient.getDeviceManager();
 
@@ -314,38 +314,6 @@ const updateAudioDevices = async (deviceManager: DeviceManager, dispatch: Dispat
   }
 };
 
-export const blobAuthorization = async(
-  dispatch: Dispatch, getState: () => State
-) => {
-
-  const state = getState();
-  const userId = state.sdk.userId;
-  const groupId=state.calls.group;
-
-  if (groupId === undefined) {
-    console.log(`Failed to make  API call because groupId is undefined`);
-    return;
-  }
-      if (userId === undefined) {
-      console.log(`Failed to make API call because userId is undefined`);
-      return;
-    }
-      let sendUserDetailsOptions = {
-      method: 'POST',
-      headers: {
-        'Authorization': userId
-      }
-    };
-
-   try {
-      let sendUserDetailsResponse = await fetch(`/groups/${state.calls.group}/user`, sendUserDetailsOptions);
-      return sendUserDetailsResponse.ok;
-    } catch (error) {
-      console.error('Failed at sending UserDetails, Error: ', error);
-      return false;
-    }
- };
-
 const updateVideoDevices = async (deviceManager: DeviceManager, dispatch: Dispatch, getState: () => State) => {
   const cameraList: VideoDeviceInfo[] = deviceManager.getCameraList();
   dispatch(setVideoDeviceList(cameraList));
@@ -447,24 +415,17 @@ export const getFile = (fileId: string) => {
   };
 };
 
-const getThreadIdFromUrl = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const threadId = urlParams.get('threadId');
-  return threadId;
-};
-
 export const uploadSelectedFile = (file: File) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
-    const threadId = state.thread.threadId;
 
-    if (userId === undefined || threadId === undefined) {
-      console.error(`Failed to make sendFile() API call because userId or threadId is undefined`);
+    if (userId === undefined) {
+      console.error(`Failed to make sendFile() API call because userId is undefined`);
       return false;
     }
 
-    return await uploadFile(userId, state.calls.group, getThreadIdFromUrl(), file, file.name);
+    return await uploadFile(userId, state.calls.group, file, file.name);
   }
 };
 
@@ -472,20 +433,18 @@ export const uploadCapturedImage = (dataUrl: string) => {
   return async (dispatch: Dispatch, getState: () => State) => {
     const state = getState();
     const userId = state.sdk.userId;
-    const threadId = state.thread.threadId;
-    console.log(`threadId for uploading: ${threadId}`);
 
-    if (userId === undefined || threadId === undefined) {
+    if (userId === undefined) {
       console.error(`Failed to make sendImage() API call because userId is undefined`);
       return false;
     }
 
     const base64String = dataUrl.replace(/^data:image\/(png|jpg);base64,/, '');
-    return await uploadFile(userId, state.calls.group, getThreadIdFromUrl(), base64String, 'user_photo.png');
+    return await uploadFile(userId, state.calls.group, base64String, 'user_photo.png');
   }
 };
 
-const uploadFile = async (userId: string, groupId: string, threadId: string | null, media: string | File, fileName: string) => {
+const uploadFile = async (userId: string, groupId: string, media: string | File, fileName: string) => {
   const data = new FormData();
   if (media instanceof File) {
     data.append('file', media);
@@ -494,10 +453,6 @@ const uploadFile = async (userId: string, groupId: string, threadId: string | nu
   }
   data.append('fileName', fileName);
   data.append('groupId', groupId);
-
-  if (threadId) {
-    data.append('threadId', threadId);
-  }
 
   let sendFileRequestOptions = {
     method: 'POST',
@@ -516,47 +471,78 @@ const uploadFile = async (userId: string, groupId: string, threadId: string | nu
   }
 };
 
+export const setUser = (userId: string) => async (dispatch: Dispatch, getState: () => State) => {
+  // Ensure that user exists in the backend
+  const createUserRequestOptions: RequestInit = {
+    method: 'POST',
+    headers: {
+      'Authorization': userId,
+    },
+  };
+  const createUserResponse = await fetch('/users', createUserRequestOptions);
+  if (createUserResponse.status !== 204 && createUserResponse.status !== 409) {
+    console.error(`Failed to ensure existence of user ${userId}, got status ${createUserResponse.status}`);
+    return;
+  }
+  
+  dispatch(setUserId(userId));
+};
+
 /**
  * Chat functionality
  */
-// This function sets up the user to chat with the thread
-const addUserToThread =  (displayName: string, emoji: string, userId: string, goToNextScreen: Function) => async (dispatch: Dispatch, getState: () => State) => {
-  let state: State = getState();
-  if (state.thread.threadId === undefined) {
-    // todo: fix
-    console.error('Thread Id not created yet');
-    return;
+// Ensures that the user is part of the group in the backend,
+// then gets the chat thread ID and sets up the chat client
+const addUserToGroup =  (displayName: string, emoji: string, userId: string, groupId: string, goToNextScreen: Function) => async (dispatch: Dispatch, getState: () => State) => {
+  const tokenResponse = await utils.getTokenForUser(userId);
+  const userToken: string = tokenResponse.value.token;
+
+  const addUserToGroupRequestOptions = {
+    method: 'POST',
+    headers: {
+      'Authorization': userId
+    }
+  };
+
+  try {
+    const addUserToGroupResponse = await fetch(`/groups/${groupId}/user`, addUserToGroupRequestOptions);
+    if (!addUserToGroupResponse.ok && addUserToGroupResponse.status !== 409) {
+      console.error(`Failed to add user to group, status code ${addUserToGroupResponse.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.error('Failed to add user to group, error: ', error);
+    return false;
   }
-  let threadId: string = state.thread.threadId;
+
+  // Get chat thread ID for the group
+  const getChatThreadRequestOptions: RequestInit = {
+    method: 'GET',
+    headers: {
+      'Authorization': userId,
+    },
+  };
+  const getChatThreadResponse = await fetch(`/groups/${groupId}/chatThread`, getChatThreadRequestOptions);
+  const threadId = await getChatThreadResponse.text();
 
   // get environment url from server
-  let environmentUrl = await getEnvironmentUrl(userId);
-
+  const environmentUrl = await getEnvironmentUrl(userId);
   if (environmentUrl === undefined) {
     console.error('unable to get environment url from server');
-    return;
-  }
-  // create our user
-  const tokenResponse = await utils.getTokenForUser(userId);
-  const userToken = tokenResponse.value.token;
-  // let userToken = await getToken();
-
-  if (userToken === undefined) {
-    console.error('unable to get a token');
-    return;
+    return false;
   }
 
- let options: RefreshOptions = {
-  initialToken: userToken,
-  tokenRefresher:  () => refreshTokenAsync(tokenResponse.value.user.id),
-  refreshProactively: true
- }
+  const options: RefreshOptions = {
+    initialToken: userToken,
+    tokenRefresher: () => refreshTokenAsync(tokenResponse.value.user.id),
+    refreshProactively: true
+  }
 
-  let userAccessTokenCredentialNew = new AzureCommunicationUserCredential(options);
-  let chatClient = new ChatClient(environmentUrl, userAccessTokenCredentialNew);
+  const userAccessTokenCredentialNew = new AzureCommunicationUserCredential(options);
+  const chatClient = new ChatClient(environmentUrl, userAccessTokenCredentialNew);
 
   // subscribe for message, typing indicator, and read receipt
-  let chatThreadClient = await chatClient.getChatThreadClient(threadId);
+  const chatThreadClient = await chatClient.getChatThreadClient(threadId);
   subscribeForMessage(chatClient, dispatch, getState);
   subscribeForTypingIndicator(chatClient, dispatch);
   subscribeForReadReceipt(chatClient, chatThreadClient, dispatch, getState);
@@ -565,19 +551,9 @@ const addUserToThread =  (displayName: string, emoji: string, userId: string, go
   dispatch(setContosoUser(tokenResponse.value.user.id, userToken, displayName));
   dispatch(setChatClient(chatClient));
 
-
-  await addThreadMemberHelper(
-    threadId,
-    {
-      identity: tokenResponse.value.user.id,
-      token: userToken,
-      displayName: displayName,
-      memberRole: 'User'
-    },
-    dispatch
-  );
-
   goToNextScreen();
+
+  return true;
 };
 
 const subscribeForTypingIndicator = async (chatClient: ChatClient, dispatch: Dispatch) => {
@@ -707,23 +683,6 @@ const sendMessage = (messageContent: string) => async (dispatch: Dispatch, getSt
   );
 };
 
-const isValidThread = (threadId: string) => async (dispatch: Dispatch) => {
-  try {
-    let validationRequestOptions = { method: 'GET' };
-
-    let validationResponse = await fetch('/isValidThread/' + threadId, validationRequestOptions);
-    if (validationResponse.status === 200) {
-      dispatch(setThreadId(threadId));
-      return true;
-    } else {
-      return false;
-    }
-  } catch (error) {
-    console.error('Failed at getting isThreadIdValid, Error: ', error);
-    return false;
-  }
-};
-
 const getMessages = () => async (dispatch: Dispatch, getState: () => State) => {
   let state: State = getState();
   let chatClient = state.contosoClient.chatClient;
@@ -742,20 +701,6 @@ const getMessages = () => async (dispatch: Dispatch, getState: () => State) => {
     return;
   }
   return dispatch(setMessages(messages.reverse()));
-};
-
-const createThread = async () => {
-  let threadId = await createThreadHelper();
-  if (threadId !== null) {
-    if (window.history.pushState) {
-      var queryParams = window.location.search? window.location.search + `&threadId=${threadId}`: `?threadId=${threadId}`
-      var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + queryParams;
-      window.history.pushState({path:newurl},'',newurl);
-  }
-    // window.location.href += `?threadId=${threadId}`;
-  } else {
-    console.error('unable to generate a new chat thread');
-  }
 };
 
 const addThreadMember = () => async (dispatch: Dispatch, state: State) => {
@@ -872,29 +817,6 @@ const updateThreadTopicName = (topicName: string, setIsSavingTopicName: React.Di
     return;
   }
   updateThreadTopicNameHelper(await chatClient.getChatThreadClient(threadId), topicName, setIsSavingTopicName);
-};
-
-// Thread Helper
-const createThreadHelper = async () => {
-  try {
-    // let body = {
-    //   id: user.identity,
-    //   displayName: user.displayName
-    // };
-    // let addMemberRequestOptions = {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(body)
-    // };
-    let createThreadRequestOptions = { method: 'POST'};
-    let createThreadResponse = await fetch('/createThread', createThreadRequestOptions);
-
-    let threadId = await createThreadResponse.text();
-    return threadId;
-  } catch (error) {
-    console.error('Failed at creating thread, Error: ', error);
-    return;
-  }
 };
 
 const getThreadHelper = async (chatClient: ChatClient, threadId: string) => {
@@ -1214,17 +1136,15 @@ const sendReadReceiptHelper = async (chatThreadClient: ChatThreadClient, message
 export {
   sendMessage,
   getMessages,
-  createThread,
   addThreadMember,
   getThreadMembers,
-  addUserToThread,
+  addUserToGroup,
   removeThreadMemberByUserId,
   getEmoji,
   setEmoji,
   sendReadReceipt,
   sendTypingNotification,
   updateTypingUsers,
-  isValidThread,
   updateThreadTopicName,
   getThread
 };

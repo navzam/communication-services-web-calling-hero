@@ -16,7 +16,7 @@ export const utils = {
     return window.location.origin;
   },
   getTokenForUser: async (userId: string): Promise<any> => {
-    const response = await fetch('/userToken?userId='.concat(encodeURIComponent(userId)));
+    const response = await fetch('/userToken', { headers: { 'Authorization': userId } });
     if (response.ok) {
       return response.json();
     }
@@ -121,9 +121,4 @@ export const getBackgroundColor = (avatar: string) => {
         backgroundColor: 'rgba(255, 250, 228, 1)'
       };
   }
-};
-
-export const getThreadId = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('threadId');
 };

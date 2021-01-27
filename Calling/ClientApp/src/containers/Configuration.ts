@@ -1,7 +1,6 @@
 import { connect } from 'react-redux';
 import ConfigurationScreen, { ConfigurationScreenProps } from '../components/Configuration';
 import { setGroup } from '../core/actions/calls';
-import { setUserId } from '../core/actions/sdk';
 import { setVideoDeviceInfo, setAudioDeviceInfo } from '../core/actions/devices';
 import { initCallClient, updateDevices } from '../core/sideEffects';
 import { setMic } from '../core/actions/controls';
@@ -10,13 +9,12 @@ import { AudioDeviceInfo, VideoDeviceInfo, LocalVideoStream } from '@azure/commu
 import { setLocalVideoStream } from '../core/actions/streams';
 
 /* chat */
-import { addUserToThread, isValidThread } from '../core/sideEffects';
+import { addUserToGroup } from '../core/sideEffects';
 import { setAddThreadMemberError } from '../core/actions/ThreadMembersAction';
 
 const mapStateToProps = (state: State, props: ConfigurationScreenProps) => ({
   deviceManager: state.devices.deviceManager,
-  callAgent: state.calls.callAgent,
-  userId: state.sdk.userId || props.userId,
+  userId: state.sdk.userId,
   group: state.calls.group,
   mic: state.controls.mic,
   screenWidth: props.screenWidth,
@@ -36,14 +34,12 @@ const mapDispatchToProps = (dispatch: any) => ({
   setVideoDeviceInfo: (deviceInfo: VideoDeviceInfo) => dispatch(setVideoDeviceInfo(deviceInfo)),
   initCallClient: (userId: string, unsupportedStateHandler: () => void, endCallHandler: () => void) =>
     dispatch(initCallClient(userId, unsupportedStateHandler, endCallHandler)),
-  setUserId: (userId: string) => dispatch(setUserId(userId)),
   setGroup: (groupId: string) => dispatch(setGroup(groupId)),
   updateDevices: () => dispatch(updateDevices()),
   /* chat */
-  setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string) => {
-    await dispatch(addUserToThread(displayName, emoji, userId, goToNextScreen));
+  setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string, groupId: string) => {
+    await dispatch(addUserToGroup(displayName, emoji, userId, groupId, goToNextScreen));
   },
-  isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
   setAddThreadMemberError: async (addThreadMemberError: boolean | undefined) => {
     dispatch(setAddThreadMemberError(addThreadMemberError));
   }
