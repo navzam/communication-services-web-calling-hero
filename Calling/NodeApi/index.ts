@@ -8,7 +8,8 @@ import { CommunicationIdentityClient } from '@azure/communication-administration
 import { ChatClient } from '@azure/communication-chat';
 import { AzureCommunicationUserCredential } from '@azure/communication-common';
 
-import { addFileMetadata, addUser, addAppointmentUser, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUser, getAppointmentUser, uploadFile, User, UserServiceError, getAppointment, Appointment, addAppointment } from './fileService';
+import { addFileMetadata, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, uploadFile } from './fileService';
+import { addUser, addAppointmentUser, getUser, getAppointmentUser, User, UserServiceError, getAppointment, Appointment, addAppointment } from './userService';
 
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
