@@ -34,8 +34,6 @@ const App = () => {
     return () => window.removeEventListener('resize', setWindowWidth);
   }, []);
 
-  const createUserId = () => 'user' + Math.ceil(Math.random() * 1000);
-
   const getGroupIdFromUrl = () => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('groupId');
@@ -55,7 +53,10 @@ const App = () => {
       return (
         <HomeScreen
           startCallHandler={() => {
-            window.history.pushState({}, document.title, window.location.href + '?groupId=' + getGroupId());
+            if (!getGroupIdFromUrl()) {
+              window.history.pushState({}, document.title, window.location.href + '?groupId=' + getGroupId());
+            }
+            setPage('configuration');
           }}
         />
       );
@@ -66,7 +67,6 @@ const App = () => {
           unsupportedStateHandler={() => setPage('error')}
           endCallHandler={() => setPage('endCall')}
           groupId={getGroupId()}
-          userId={createUserId()}
           screenWidth={screenWidth}
         />
       );
@@ -75,7 +75,6 @@ const App = () => {
         <GroupCall
           endCallHandler={() => setPage('endCall')}
           groupId={getGroupId()}
-          userId={createUserId()}
           screenWidth={screenWidth}
           errorHandler={() => {setPage('error');}}
                 />
@@ -105,9 +104,6 @@ const App = () => {
     }
   };
 
- if (getGroupIdFromUrl() && page === 'home') {
-  setPage('configuration');
-  }
 
   if (utils.isMobileSession() || utils.isSmallScreen()) {
     console.log('ACS Calling sample: This is experimental behaviour');

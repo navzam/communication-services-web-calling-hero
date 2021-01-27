@@ -169,7 +169,7 @@ export async function getAppointmentUser(groupId: string, userId: string, storag
     return users;
 }
 
-export type UserServiceErrorType = 'UserNotFound' | 'AppointmentNotFound';
+export type UserServiceErrorType = 'UserNotFound' | 'UserAlreadyExists' | 'AppointmentNotFound';
 
 export class UserServiceError extends Error {
     public type: UserServiceErrorType;
@@ -222,7 +222,16 @@ export async function addUser(user: User, storageConnectionString: string, table
         UserId: user.userId,
         ACSUserId: user.acsUserId,
     };
-    await tableClient.createEntity(entity);
+
+    try {
+        await tableClient.createEntity(entity);
+    } catch (e) {
+        if (e instanceof RestError && e.statusCode === 409) {
+            throw new UserServiceError('UserAlreadyExists');
+        }
+
+        throw e;
+    }
 }
 
 export interface Appointment {

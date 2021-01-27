@@ -4,13 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { Stack, Spinner, PrimaryButton } from '@fluentui/react';
 import LocalPreview from './LocalPreview';
 import LocalSettings from './LocalSettings';
-import DisplayNameField from './DisplayNameField';
 import {
   VideoDeviceInfo,
   AudioDeviceInfo,
   LocalVideoStream,
   DeviceManager,
-  CallAgent
 } from '@azure/communication-calling';
 import { VideoCameraEmphasisIcon } from '@fluentui/react-icons-northstar';
 import {
@@ -24,18 +22,15 @@ import {
 } from './styles/Configuration.styles';
 
 /* chat */
-import { MAXIMUM_LENGTH_OF_NAME } from '../constants';
 import {
   CAT,
   // getThreadId
 } from '../Utils/Utils';
 
 export interface ConfigurationScreenProps {
-  userId: string;
+  userId: string | undefined;
   groupId: string;
-  callAgent: CallAgent;
   deviceManager: DeviceManager;
-  setUserId(userId: string): void;
   initCallClient(userId: string, unsupportedStateHandler: () => void, endCallhandler: () => void): void;
   setGroup(groupId: string): void;
   startCallHandler(): void;
@@ -63,18 +58,14 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
   const spinnerLabel = 'Initializing call client...';
   const buttonText = 'Start call';
 
-  const [name, setName] = useState(props.userId);
-  const [emptyWarning, setEmptyWarning] = useState(false);
-
   const [isJoining, setIsJoining] = useState(false);
 
-  const { userId, groupId, setUserId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler } = props;
+  const { userId, groupId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler } = props;
 
   const [isLoadingThread, /*setIsLoadingThread*/] = useState(false);
 
   /* chat */
   const [selectedAvatar ] = useState(CAT);
-  const [isNameLengthExceedLimit, setNameLengthExceedLimit] = useState(false);
   // const [isValidThread, setIsValidThread] = useState<boolean | undefined>(
   //   undefined
   // );
@@ -89,22 +80,6 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
 
   const { addThreadMemberError } = props;
 
-  const validateName = () => {
-    if (!name) {
-      setEmptyWarning(true);
-      setNameLengthExceedLimit(false);
-    } else if (name.length > MAXIMUM_LENGTH_OF_NAME) {
-      setEmptyWarning(false);
-      setNameLengthExceedLimit(true);
-    } else {
-      setEmptyWarning(false);
-      setNameLengthExceedLimit(false);
-      if (!isJoining) {
-        props.setup(name, selectedAvatar, props.startCallHandler, name, groupId);
-        setIsJoining(true);
-      }
-    }
-  };
 
   // const isValidThreadProp = props.isValidThread;
 
@@ -136,10 +111,16 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
   // }, [isValidThreadProp]);
 
   useEffect(() => {
-    setUserId(userId);
-    initCallClient(userId, unsupportedStateHandler, endCallHandler);
     setGroup(groupId);
-  }, [userId, groupId, setUserId, initCallClient, setGroup, unsupportedStateHandler, endCallHandler]);
+  }, [groupId, setGroup]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    initCallClient(userId, unsupportedStateHandler, endCallHandler);
+  }, [userId, initCallClient, unsupportedStateHandler, endCallHandler]);
 
   // useEffect(() => {
   //   let listener: NodeJS.Timeout = setInterval(async () => {
@@ -191,14 +172,6 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
             audioDeviceList={props.audioDeviceList}
           />
           <Stack className={localSettingsContainerStyle}>
-            <DisplayNameField 
-              setName={setName} 
-              name={name} 
-              validateName={validateName}
-              setNameLengthExceedLimit={setNameLengthExceedLimit}
-              isNameLengthExceedLimit={isNameLengthExceedLimit}
-              setEmptyWarning={setEmptyWarning} 
-              isEmpty={emptyWarning} />
             <div>
               <LocalSettings
                 videoDeviceList={props.videoDeviceList}
@@ -213,14 +186,9 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
               <PrimaryButton
                 className={buttonStyle}
                 onClick={() => {
-                  if (!name) {
-                    setEmptyWarning(true);
-                  } else {
-                    setEmptyWarning(false);
-                    props.setUserId(name);
-                    props.callAgent.updateDisplayName(name);
-                    validateName();
-                    // props.startCallHandler();
+                  if (!isJoining) {
+                    setIsJoining(true);
+                    props.setup(props.userId!, selectedAvatar, props.startCallHandler, props.userId!, groupId);
                   }
                 }}
               >

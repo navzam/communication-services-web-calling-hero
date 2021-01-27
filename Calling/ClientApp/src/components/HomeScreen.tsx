@@ -1,5 +1,5 @@
 // © Microsoft Corporation. All rights reserved.
-import React, { /*useState*/ } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, PrimaryButton, Icon, Image, IImageStyles, /*Spinner*/ } from '@fluentui/react';
 import { VideoCameraEmphasisIcon } from '@fluentui/react-icons-northstar';
 import heroSVG from '../assets/hero.svg';
@@ -15,10 +15,14 @@ import {
   nestedStackTokens,
   upperStackStyle, listItemStyle
 } from './styles/HomeScreen.styles';
+import DisplayNameField from './DisplayNameField';
+import { MAXIMUM_LENGTH_OF_NAME } from '../constants';
 
 export interface HomeScreenProps {
   startCallHandler(): void;
+  setUser(userId: string): void;
   // createThreadHandler(): void;
+  userId?: string;
 }
 
 const imageStyleProps: IImageStyles = {
@@ -29,7 +33,14 @@ const imageStyleProps: IImageStyles = {
   root: {}
 };
 
+const createRandomUserId = () => 'user' + Math.ceil(Math.random() * 1000);
+
 export default (props: HomeScreenProps): JSX.Element => {
+  const [name, setName] = useState(createRandomUserId());
+  const [emptyWarning, setEmptyWarning] = useState(false);
+  const [isNameLengthExceedLimit, setNameLengthExceedLimit] = useState(false);
+  const [isUserCreateInProgress, setIsUserCreateInProgress] = useState(false);
+  
   const iconName = 'SkypeCircleCheck';
   const imageProps = { src: heroSVG.toString() };
   const headerTitle = 'Exceptionally simple video calling';
@@ -41,6 +52,12 @@ export default (props: HomeScreenProps): JSX.Element => {
     'High quality, low latency capabilities for an uninterrupted calling experience',
     'Learn about this'
   ];
+
+  useEffect(() => {
+    if (props.userId) {
+      props.startCallHandler();
+    }
+  }, [props.userId]);
 
   // const [isCreatingThread, setIsCreatingThread] = useState(false);
 
@@ -54,6 +71,24 @@ export default (props: HomeScreenProps): JSX.Element => {
   //     <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
   //   );
   // };
+
+  const validateName = () => {
+    if (!name) {
+      setEmptyWarning(true);
+      setNameLengthExceedLimit(false);
+    } else if (name.length > MAXIMUM_LENGTH_OF_NAME) {
+      setEmptyWarning(false);
+      setNameLengthExceedLimit(true);
+    } else {
+      setEmptyWarning(false);
+      setNameLengthExceedLimit(false);
+
+      if (!isUserCreateInProgress) {
+        setIsUserCreateInProgress(true);
+        props.setUser(name);
+      }
+    }
+  };
 
   const homeScreen = () => {
     return (
@@ -77,11 +112,20 @@ export default (props: HomeScreenProps): JSX.Element => {
                   </li>
               </ul>
           </Stack>
+          <DisplayNameField 
+              setName={setName} 
+              name={name} 
+              validateName={validateName}
+              setNameLengthExceedLimit={setNameLengthExceedLimit}
+              isNameLengthExceedLimit={isNameLengthExceedLimit}
+              setEmptyWarning={setEmptyWarning} 
+              isEmpty={emptyWarning} />
           <PrimaryButton 
-            className={buttonStyle} 
+            className={buttonStyle}
+            disabled={emptyWarning || isNameLengthExceedLimit || isUserCreateInProgress}
             onClick={async () => {
               // onCreateThread();
-              props.startCallHandler();
+              validateName();
             }}>
             <VideoCameraEmphasisIcon className={videoCameraIconStyle} size="medium" />
             {startCallButtonText}
