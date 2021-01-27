@@ -9,7 +9,7 @@ import { AudioDeviceInfo, VideoDeviceInfo, LocalVideoStream } from '@azure/commu
 import { setLocalVideoStream } from '../core/actions/streams';
 
 /* chat */
-import { addUserToGroup, /*isValidThread*/ } from '../core/sideEffects';
+import { addUserToGroup } from '../core/sideEffects';
 import { setAddThreadMemberError } from '../core/actions/ThreadMembersAction';
 
 const mapStateToProps = (state: State, props: ConfigurationScreenProps) => ({
@@ -40,7 +40,6 @@ const mapDispatchToProps = (dispatch: any) => ({
   setup: async (displayName: string, emoji: string, goToNextScreen: Function, userId: string, groupId: string) => {
     await dispatch(addUserToGroup(displayName, emoji, userId, groupId, goToNextScreen));
   },
-  // isValidThread: async (threadId: string) => dispatch(isValidThread(threadId)),
   setAddThreadMemberError: async (addThreadMemberError: boolean | undefined) => {
     dispatch(setAddThreadMemberError(addThreadMemberError));
   }

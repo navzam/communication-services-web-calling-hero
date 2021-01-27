@@ -8,15 +8,7 @@ import { CommunicationIdentityClient } from '@azure/communication-administration
 import { ChatClient } from '@azure/communication-chat';
 import { AzureCommunicationUserCredential } from '@azure/communication-common';
 
-// TODO: move to declaration file
 import { addFileMetadata, addUser, addAppointmentUser, downloadFile, FileMetadata, FileServiceError, getFileMetadata, getFilesForGroup, getUser, getAppointmentUser, uploadFile, User, UserServiceError, getAppointment, Appointment, addAppointment } from './fileService';
-declare global {
-    namespace Express {
-        export interface Request {
-            userId: string;
-        }
-    }
-}
 
 const uploadMiddleware = multer({ limits: { fieldSize: 5 * 1024 * 1024 } });
 
@@ -88,23 +80,18 @@ app.get('/userToken', fakeAuthMiddleware, async (req, res) => {
 
     let acsUserId: string;
     try {
-        console.log(`Getting user ${req.userId}...`);
         const user = await getUser(req.userId, storageConnectionString, userTableName);
         acsUserId = user.acsUserId;
     } catch (e) {
         // If this is a new user, create a new ACS user and insert user into table
         if (e instanceof UserServiceError && e.type === 'UserNotFound') {
-            console.log(`User does not exist. Creating a new ACS user...`,);
             const userResponse = await identityClient.createUser();
             acsUserId = userResponse.communicationUserId;
-            console.log(`Created ACS user ${acsUserId}`);
             
-            console.log(`Adding user to User table...`);
             await addUser({
                 userId: req.userId,
                 acsUserId: acsUserId,
             }, storageConnectionString, userTableName);
-            console.log(`Added user to User table`);
         } else {
             throw e;
         }
@@ -251,61 +238,6 @@ app.get('/getEnvironmentUrl', fakeAuthMiddleware, async (req, res) => {
     res.status(200).send(getEnvironmentUrl());
  });
 
-//  app.get('/isValidThread/:threadId', async (req, res) => {
-//      if(req.params['threadId'] in tokenStore){
-//         return res.sendStatus(200);
-//      }
-//      return res.sendStatus(404);
-//  });
-
-//  app.post('/createThread', async(req, res) => {
-//      console.log('/createThread');
-//     const identityClient = new CommunicationIdentityClient(acsConnectionString);
-
-//     // create our user
-//     const userResponse = await identityClient.createUser();
-//     const tokenResponse = await identityClient.issueToken(userResponse, ["voip", "chat"]);
-
-//     let chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(tokenResponse.token));
-//     let createThreadRequest = {
-//         topic: 'Chat',
-//         members: [{
-//                     user: { communicationUserId: tokenResponse.user.communicationUserId },
-//                 }]
-//     };
-
-//     let chatThreadClient= await chatClient.createChatThread(createThreadRequest);
-//     let threadId = chatThreadClient.threadId;
-//     tokenStore[threadId] = new CommunicationUserToken(threadId, tokenResponse.user.communicationUserId, tokenResponse.token);
-
-//     return res.status(200).send(threadId);
-//  });
-
-//  app.post('/addUser/:threadId', fakeAuthMiddleware, async(req, res) => {
-//      console.log('/addUser/:threadId');
-//     try{
-//         const threadId = req.params['threadId'];
-//         const body = req.body as AddUserRequestBody;
-//         const moderator = tokenStore[threadId];
-    
-//         let addMembersRequest =
-//         {
-//         members: [
-//             {
-//                 user: { communicationUserId: body.id },
-//                 displayName: body.displayName
-//             }]
-//             };
-    
-//         let chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(moderator.moderatorToken));
-//         let chatThreadClient = await chatClient.getChatThreadClient(threadId);
-//         await chatThreadClient.addMembers(addMembersRequest);
-//         res.sendStatus(200);
-//     }catch(error){
-//         res.sendStatus(400);
-//     }
-//  });
-
 app.get('/groups/:groupId/chatThread', fakeAuthMiddleware, async (req, res) => {
     const groupId = req.params['groupId'];
     const userId = req.userId;
@@ -324,7 +256,6 @@ app.get('/groups/:groupId/chatThread', fakeAuthMiddleware, async (req, res) => {
 });
 
 app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
-    console.log('POST /groups/:groupId/user');
     const groupId = req.params['groupId'];
     const userId = req.userId;
     if (groupId === undefined) {
@@ -334,11 +265,9 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
     // Ensure user exists as a valid user
     let user: User;
     try {
-        console.log(`Getting user ${userId}...`);
         user = await getUser(userId, storageConnectionString, userTableName);
     } catch (e) {
         if (e instanceof UserServiceError && e.type === 'UserNotFound') {
-            console.log(`User ${userId} not found`);
             return res.sendStatus(403);
         }
 
@@ -354,14 +283,11 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
     // Get appointment and add user to the associated chat thread
     let appointment: Appointment;
     try {
-        console.log(`Getting appointment ${groupId}...`);
         appointment = await getAppointment(groupId, storageConnectionString, appointmentTableName);
 
-        console.log(`Getting ACS token for moderator user ${appointment.acsModeratorUserId}`);
         const identityClient = new CommunicationIdentityClient(acsConnectionString);
         const tokenResponse = await identityClient.issueToken({ communicationUserId: appointment.acsModeratorUserId }, ["chat"]);
 
-        console.log(`Adding user ${user.userId} to chat thread ${appointment.acsChatThreadId}...`);
         const chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(tokenResponse.token));
         const chatThreadClient = await chatClient.getChatThreadClient(appointment.acsChatThreadId);
         await chatThreadClient.addMembers({
@@ -370,18 +296,14 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
                 displayName: user.userId,
             }],
         });
-        console.log(`User added to chat thread`);
     } catch (e) {
         // For this sample, if appointment doesn't exist, create it along with an ACS chat thread
         // If a different system is responsible for creating appointments, this API could return a 404/403
         if (e instanceof UserServiceError && e.type === 'AppointmentNotFound') {
-            console.log(`Appointment ${groupId} does not exist`);
-            console.log(`Getting ACS token for ACS user ${user.acsUserId}`);
             const identityClient = new CommunicationIdentityClient(acsConnectionString);
             const moderatorUser = await identityClient.createUser();
             const moderatorUserToken = await identityClient.issueToken(moderatorUser, ["chat"]);
             
-            console.log(`Creating chat thread with initial moderator ${moderatorUser.communicationUserId}...`);
             const chatClient = new ChatClient(getEnvironmentUrl(), new AzureCommunicationUserCredential(moderatorUserToken.token));
             const chatThreadClient = await chatClient.createChatThread({
                 topic: 'Chat',
@@ -390,7 +312,6 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
                     { user: { communicationUserId: user.acsUserId }, displayName: user.userId, },
                 ],
             });
-            console.log(`Chat thread created with initial moderator and user`);
 
             appointment = {
                 appointmentId: groupId,
@@ -405,9 +326,7 @@ app.post('/groups/:groupId/user', fakeAuthMiddleware, async (req, res) => {
     }
 
     // Associate user with the group
-    console.log(`Adding user to appointment...`);
     await addAppointmentUser(groupId, userId, storageConnectionString, appointmentUserTableName);
-    console.log('Added user to AppointmentUser table');
    
     return res.sendStatus(201);
 });

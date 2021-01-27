@@ -1,6 +1,6 @@
 // © Microsoft Corporation. All rights reserved.
 import React, { useEffect, useState } from 'react';
-import { Stack, PrimaryButton, Icon, Image, IImageStyles, /*Spinner*/ } from '@fluentui/react';
+import { Stack, PrimaryButton, Icon, Image, IImageStyles, Spinner } from '@fluentui/react';
 import { VideoCameraEmphasisIcon } from '@fluentui/react-icons-northstar';
 import heroSVG from '../assets/hero.svg';
 import {
@@ -21,7 +21,6 @@ import { MAXIMUM_LENGTH_OF_NAME } from '../constants';
 export interface HomeScreenProps {
   startCallHandler(): void;
   setUser(userId: string): void;
-  // createThreadHandler(): void;
   userId?: string;
 }
 
@@ -45,7 +44,7 @@ export default (props: HomeScreenProps): JSX.Element => {
   const imageProps = { src: heroSVG.toString() };
   const headerTitle = 'Exceptionally simple video calling';
   const startCallButtonText = 'Start a call';
-  // const spinnerLabel = 'Initializing client...';
+  const spinnerLabel = "Creating user...";
   const listItems = [
     'Customize with your web stack',
     'Connect with users with seamless collaboration across web',
@@ -58,19 +57,6 @@ export default (props: HomeScreenProps): JSX.Element => {
       props.startCallHandler();
     }
   }, [props.userId]);
-
-  // const [isCreatingThread, setIsCreatingThread] = useState(false);
-
-  // const onCreateThread = () => {
-  //   setIsCreatingThread(true);
-  //   props.createThreadHandler();
-  // };
-
-  // const createThreadLoading = () => {
-  //   return (
-  //     <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
-  //   );
-  // };
 
   const validateName = () => {
     if (!name) {
@@ -88,6 +74,12 @@ export default (props: HomeScreenProps): JSX.Element => {
         props.setUser(name);
       }
     }
+  };
+
+  const userCreateLoading = () => {
+    return (
+      <Spinner label={spinnerLabel} ariaLive="assertive" labelPosition="top" />
+    );
   };
 
   const homeScreen = () => {
@@ -124,7 +116,6 @@ export default (props: HomeScreenProps): JSX.Element => {
             className={buttonStyle}
             disabled={emptyWarning || isNameLengthExceedLimit || isUserCreateInProgress}
             onClick={async () => {
-              // onCreateThread();
               validateName();
             }}>
             <VideoCameraEmphasisIcon className={videoCameraIconStyle} size="medium" />
@@ -141,5 +132,5 @@ export default (props: HomeScreenProps): JSX.Element => {
     );
   };
 
-  return homeScreen();
+  return isUserCreateInProgress ? userCreateLoading() : homeScreen();
 };

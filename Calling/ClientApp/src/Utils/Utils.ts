@@ -122,8 +122,3 @@ export const getBackgroundColor = (avatar: string) => {
       };
   }
 };
-
-// export const getThreadId = () => {
-//   const urlParams = new URLSearchParams(window.location.search);
-//   return urlParams.get('threadId');
-// };
