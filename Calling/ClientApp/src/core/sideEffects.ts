@@ -491,7 +491,8 @@ export const setUser = (userId: string) => async (dispatch: Dispatch, getState: 
 /**
  * Chat functionality
  */
-// This function sets up the user to chat with the thread
+// Ensures that the user is part of the group in the backend,
+// then gets the chat thread ID and sets up the chat client
 const addUserToGroup =  (displayName: string, emoji: string, userId: string, groupId: string, goToNextScreen: Function) => async (dispatch: Dispatch, getState: () => State) => {
   const tokenResponse = await utils.getTokenForUser(userId);
   const userToken: string = tokenResponse.value.token;

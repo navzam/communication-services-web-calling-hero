@@ -75,8 +75,6 @@ app.post('/users', fakeAuthMiddleware, async (req, res) => {
 });
 
 app.get('/userToken', fakeAuthMiddleware, async (req, res) => {
-    console.log(`/userToken`);
-
     const identityClient = new CommunicationIdentityClient(acsConnectionString);
 
     let acsUserId: string;

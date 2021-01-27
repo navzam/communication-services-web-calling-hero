@@ -126,7 +126,7 @@ export default (props: ConfigurationScreenProps): JSX.Element => {
                 onClick={() => {
                   if (!isJoining) {
                     setIsJoining(true);
-                    props.setup(props.userId!, selectedAvatar, props.startCallHandler, props.userId!, groupId);
+                    props.setup(userId!, selectedAvatar, props.startCallHandler, userId!, groupId);
                   }
                 }}
               >
