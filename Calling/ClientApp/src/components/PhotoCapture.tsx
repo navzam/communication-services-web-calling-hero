@@ -1,5 +1,7 @@
 import { Dropdown, IDropdownOption, MessageBar, MessageBarType, PrimaryButton, Spinner, Stack } from "@fluentui/react";
+import { CameraIcon, SendIcon, UndoIcon } from "@fluentui/react-northstar";
 import React, { useEffect, useRef, useState } from "react";
+import { buttonIconStyle, buttonStackTokens, buttonStyle, photoAreaStyle, stackTokens } from "./styles/PhotoCapture.styles";
 
 export interface PhotoCaptureProps {
     onPhotoCaptured: (dataUrl: string) => unknown;
@@ -14,7 +16,6 @@ export default (props: PhotoCaptureProps): JSX.Element => {
     const [videoWidth, setVideoWidth] = useState(0);
     const [videoHeight, setVideoHeight] = useState(0);
     const [isVideoReady, setIsVideoReady] = useState(false);
-    const [needToCapture, setNeedToCapture] = useState(false);
     const [isCaptured, setIsCaptured] = useState(false);
 
     useEffect(() => {
@@ -61,30 +62,8 @@ export default (props: PhotoCaptureProps): JSX.Element => {
         }).catch((reason) => {
             setSelectedCameraDeviceFailed(true);
             console.error('Failed to get media from device: ', reason);
-        })
+        });
     }, [selectedCameraDeviceId]);
-
-    useEffect(() => {
-        if (needToCapture) {
-            if (refCanvas.current === null) {
-                console.error(`refCanvas is null`);
-                return;
-            }
-
-            const canvasContext = refCanvas.current.getContext('2d');
-            if (canvasContext === null) {
-                console.error(`Couldn't get canvas context`);
-                return;
-            }
-
-            refCanvas.current.width = videoWidth;
-            refCanvas.current.height = videoHeight;
-            canvasContext.drawImage(refVideo.current!, 0, 0, videoWidth, videoHeight);
-
-            setIsCaptured(true);
-            setNeedToCapture(false);
-        }
-    }, [needToCapture]);
 
     // Event when user selects a different camera
     const onCameraDropdownChanged = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, index?: number) => {
@@ -99,7 +78,26 @@ export default (props: PhotoCaptureProps): JSX.Element => {
     };
 
     const onCaptureClicked = () => {
-        setNeedToCapture(true);
+        if (refCanvas.current === null) {
+            console.error(`refCanvas is null`);
+            return;
+        }
+
+        const canvasContext = refCanvas.current.getContext('2d');
+        if (canvasContext === null) {
+            console.error(`Couldn't get canvas context`);
+            return;
+        }
+
+        refCanvas.current.width = videoWidth;
+        refCanvas.current.height = videoHeight;
+        canvasContext.drawImage(refVideo.current!, 0, 0, videoWidth, videoHeight);
+
+        setIsCaptured(true);
+    };
+
+    const onRetakeClicked = () => {
+        setIsCaptured(false);
     };
 
     const onSendClicked = () => {
@@ -115,24 +113,43 @@ export default (props: PhotoCaptureProps): JSX.Element => {
         errorMessage = "No cameras found.";
     }
 
-    return <Stack>
-        {errorMessage && <MessageBar messageBarType={MessageBarType.error}>{errorMessage}</MessageBar>}
-        <Dropdown
-            label="Cameras"
-            selectedKey={selectedCameraDeviceId ?? undefined}
-            onChange={onCameraDropdownChanged}
-            placeholder="Select a camera"
-            disabled={cameraDevices === null || cameraDevices.length === 0}
-            options={(cameraDevices ?? []).map(device => ({ key: device.deviceId, text: device.label }))}
-        />
-        {(!isVideoReady && !selectedCameraDeviceFailed) && <Spinner />}
-        {!isCaptured && <video autoPlay ref={refVideo} hidden={!isVideoReady} />}
-        {(needToCapture || isCaptured) && <canvas ref={refCanvas} />}
-        <PrimaryButton onClick={onCaptureClicked}>
-            Capture
-        </PrimaryButton>
-        <PrimaryButton onClick={onSendClicked}>
-            Send
-        </PrimaryButton>
-    </Stack>;
+    return (
+        <Stack tokens={stackTokens}>
+            {errorMessage && <MessageBar messageBarType={MessageBarType.error}>{errorMessage}</MessageBar>}
+            <Dropdown
+                label="Cameras"
+                selectedKey={selectedCameraDeviceId ?? undefined}
+                onChange={onCameraDropdownChanged}
+                placeholder="Select a camera"
+                disabled={cameraDevices === null || cameraDevices.length === 0}
+                options={(cameraDevices ?? []).map(device => ({ key: device.deviceId, text: device.label }))}
+            />
+            {(!isVideoReady && !selectedCameraDeviceFailed) && <Spinner />}
+            <video autoPlay ref={refVideo} hidden={isCaptured || !isVideoReady} className={photoAreaStyle} />
+            <canvas ref={refCanvas} hidden={!isCaptured} className={photoAreaStyle} />
+            <Stack horizontal tokens={buttonStackTokens}>
+                {isCaptured ? (
+                    <Stack.Item grow>
+                        <PrimaryButton disabled={!isVideoReady} className={buttonStyle} onClick={onRetakeClicked}>
+                            <UndoIcon className={buttonIconStyle} />
+                            Retake
+                        </PrimaryButton>
+                    </Stack.Item>
+                ) : (
+                    <Stack.Item grow>
+                        <PrimaryButton disabled={!isVideoReady} className={buttonStyle} onClick={onCaptureClicked}>
+                            <CameraIcon className={buttonIconStyle} />
+                            Capture
+                        </PrimaryButton>
+                    </Stack.Item>
+                )}
+                <Stack.Item grow>
+                    <PrimaryButton disabled={!isVideoReady || !isCaptured} className={buttonStyle} onClick={onSendClicked}>
+                        <SendIcon className={buttonIconStyle} />
+                        Send
+                    </PrimaryButton>
+                </Stack.Item>
+            </Stack>
+        </Stack>
+    );
 }
