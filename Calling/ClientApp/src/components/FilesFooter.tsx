@@ -63,8 +63,10 @@ export default (props: FilesFooterProps): JSX.Element => {
             {takePhotoString}
         </PrimaryButton>
         <Modal isOpen={takingPhoto}>
-            <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setTakingPhoto(false)} />
-            {takingPhoto && <PhotoCapture onPhotoCaptured={onPhotoCaptured} />}
+            <Stack>
+                <IconButton iconProps={{ iconName: 'Cancel' }} onClick={() => setTakingPhoto(false)} />
+                {takingPhoto && <PhotoCapture onPhotoCaptured={onPhotoCaptured} />}
+            </Stack>
         </Modal>
         <input ref={hiddenFileInputRef} type="file" name="name" onChange={fileInputChanged} style={{ display: 'none' }} />
     </Stack>;
